@@ -18,14 +18,21 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
     .from("match_sentiment").select("*").eq("match_id", params.id).single();
 
   let pick: Outcome | null = null;
+  let betAmount: number | null = null;
+  let userCoins = 0;
   if (user) {
-    const { data: pred } = await supabase
-      .from("predictions")
-      .select("prediction")
-      .eq("match_id", params.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    pick = (pred?.prediction as Outcome) ?? null;
+    const [predRes, profileRes] = await Promise.all([
+      supabase
+        .from("predictions")
+        .select("prediction, bet_amount")
+        .eq("match_id", params.id)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase.from("users").select("coins").eq("id", user.id).single(),
+    ]);
+    pick = (predRes.data?.prediction as Outcome) ?? null;
+    betAmount = predRes.data?.bet_amount ?? null;
+    userCoins = profileRes.data?.coins ?? 0;
   }
 
   return (
@@ -44,7 +51,9 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
           total_count: 0,
         }}
         initialPick={pick}
+        initialBet={betAmount}
         signedIn={!!user}
+        userCoins={userCoins}
       />
     </>
   );

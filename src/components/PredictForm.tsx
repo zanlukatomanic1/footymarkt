@@ -2,18 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import SentimentBar from "@/components/SentimentBar";
+import BetModal from "@/components/BetModal";
 import { teamData } from "@/lib/teamData";
 import { fmtKickoffLong } from "@/lib/dates";
-import { estimateReward, sentimentPct } from "@/lib/coins";
+import { estimateCashout, estimateReward, sentimentPct } from "@/lib/coins";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 type Props = {
   match: Match;
   initialSentiment: Sentiment;
   initialPick: Outcome | null;
+  initialBet: number | null;
   signedIn: boolean;
+  userCoins: number;
 };
 
 const OPTS: {
@@ -60,14 +62,18 @@ function CoinIcon({ color }: { color: string }) {
   );
 }
 
-export default function PredictForm({ match, initialSentiment, initialPick, signedIn }: Props) {
+export default function PredictForm({ match, initialSentiment, initialPick, initialBet, signedIn, userCoins }: Props) {
   const router = useRouter();
-  const supabase = createClient();
   const [sentiment, setSentiment] = useState<Sentiment>(initialSentiment);
   const [pick, setPick] = useState<Outcome | null>(initialPick);
+  const [betAmount, setBetAmount] = useState<number | null>(initialBet);
+  const [coins, setCoins] = useState(userCoins);
   const [hov, setHov] = useState<Outcome | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [modalOutcome, setModalOutcome] = useState<Outcome | null>(null);
+  const [cashingOut, setCashingOut] = useState(false);
+  const [cashoutBusy, setCashoutBusy] = useState(false);
 
   const locked = new Date(match.kickoff_at).getTime() <= Date.now() || match.result !== null;
   const pct = useMemo(() => sentimentPct(sentiment), [sentiment]);
@@ -75,35 +81,61 @@ export default function PredictForm({ match, initialSentiment, initialPick, sign
   const away = teamData(match.away_team);
 
 
-  const handleSelect = async (choice: Outcome) => {
+  const handleSelect = (choice: Outcome) => {
     if (!signedIn) { router.push("/login"); return; }
-    if (busy || locked) return;
-    if (pick === choice) { setPick(null); return; }
+    if (busy || locked || pick !== null) return;
     setErr(null);
-    setBusy(true);
+    setModalOutcome(choice);
+  };
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
-
-    const { error } = await supabase.from("predictions").upsert(
-      { user_id: user.id, match_id: match.id, prediction: choice },
-      { onConflict: "user_id,match_id" }
-    );
-
-    if (error) { setErr(error.message); setBusy(false); return; }
+  const handleModalConfirm = async (amount: number) => {
+    if (!modalOutcome) return;
+    const res = await fetch("/api/bet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId: match.id, prediction: modalOutcome, betAmount: amount }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Failed to place bet");
 
     setSentiment((s) => {
-      const n = { ...s };
-      if (pick !== null) {
-        n[`${pick}_count` as const] = Math.max(0, n[`${pick}_count` as const] - 1);
-      } else {
-        n.total_count += 1;
-      }
-      n[`${choice}_count` as const] += 1;
+      const n = { ...s, total_count: s.total_count + 1 };
+      n[`${modalOutcome}_count` as const] += 1;
       return n;
     });
-    setPick(choice);
-    setBusy(false);
+    setPick(modalOutcome);
+    setBetAmount(amount);
+    setCoins(json.newBalance ?? coins - amount);
+    setModalOutcome(null);
+    router.refresh();
+  };
+
+  const handleCashout = async () => {
+    setCashoutBusy(true);
+    setErr(null);
+    const res = await fetch("/api/cashout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId: match.id }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setErr(json.error ?? "Cashout failed");
+      setCashoutBusy(false);
+      setCashingOut(false);
+      return;
+    }
+    setSentiment((s) => {
+      if (!pick) return s;
+      const n = { ...s, total_count: Math.max(0, s.total_count - 1) };
+      n[`${pick}_count` as const] = Math.max(0, n[`${pick}_count` as const] - 1);
+      return n;
+    });
+    setPick(null);
+    setBetAmount(null);
+    setCoins(json.newBalance ?? coins + (json.cashout ?? 0));
+    setCashingOut(false);
+    setCashoutBusy(false);
     router.refresh();
   };
 
@@ -183,34 +215,79 @@ export default function PredictForm({ match, initialSentiment, initialPick, sign
       </div>
 
       {/* Lock banner */}
-      {pick && !locked && (
-        <div
-          className="mb-3.5 flex items-center gap-2 rounded-[10px] px-[14px] py-[10px]"
-          style={{
-            background: "rgba(0,255,135,0.05)",
-            border: "1px solid rgba(0,255,135,0.15)",
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2" strokeLinecap="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          <span className="flex-1 text-[13px] font-semibold text-brand">
-            Prediction locked in —{" "}
-            {pick === "home" ? match.home_team : pick === "away" ? match.away_team : "Draw"}
-          </span>
-          <button
-            onClick={() => setPick(null)}
-            className="flex items-center gap-[4px] font-mono text-[11px] text-ink-faint hover:text-ink transition-colors"
+      {pick && !locked && (() => {
+        const cashoutValue = betAmount !== null ? estimateCashout(pick, sentiment, betAmount) : null;
+        return cashingOut ? (
+          <div
+            className="mb-3.5 rounded-[10px] px-[14px] py-[12px]"
+            style={{ background: "rgba(255,80,80,0.05)", border: "1px solid rgba(255,80,80,0.2)" }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+            <div className="mb-[8px] text-[13px] font-semibold text-[#ff5050]">
+              Cash out your bet?
+            </div>
+            <div className="mb-[10px] font-mono text-[11px] text-ink-faint">
+              You wagered{" "}
+              <span className="text-ink">{betAmount?.toLocaleString()} coins</span>. You'll receive{" "}
+              <span className="text-brand">{cashoutValue?.toLocaleString()} coins</span> back based on current market odds.
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCashout}
+                disabled={cashoutBusy}
+                className="flex-1 rounded-[8px] py-[8px] font-mono text-[12px] font-bold tracking-[0.04em] transition-all disabled:opacity-40"
+                style={{ background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.35)", color: "#ff5050" }}
+              >
+                {cashoutBusy ? "Processing…" : `Confirm — get ${cashoutValue?.toLocaleString()} coins`}
+              </button>
+              <button
+                onClick={() => setCashingOut(false)}
+                disabled={cashoutBusy}
+                className="rounded-[8px] px-[14px] py-[8px] font-mono text-[12px] text-ink-faint transition-colors hover:text-ink disabled:opacity-40"
+                style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}
+              >
+                Keep bet
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="mb-3.5 flex items-center gap-2 rounded-[10px] px-[14px] py-[10px]"
+            style={{ background: "rgba(0,255,135,0.05)", border: "1px solid rgba(0,255,135,0.15)" }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2" strokeLinecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            Change
-          </button>
-        </div>
-      )}
+            <div className="flex-1">
+              <div className="text-[13px] font-semibold text-brand">
+                Bet placed —{" "}
+                {pick === "home" ? match.home_team : pick === "away" ? match.away_team : "Draw"}
+              </div>
+              {betAmount !== null && (
+                <div className="mt-[2px] flex items-center gap-[5px] font-mono text-[10.5px] text-ink-faint">
+                  <CoinIcon color="#00ff87" />
+                  <span>{betAmount.toLocaleString()} coins wagered</span>
+                </div>
+              )}
+            </div>
+            {cashoutValue !== null && (
+              <button
+                onClick={() => setCashingOut(true)}
+                className="flex flex-col items-end rounded-[8px] px-[10px] py-[6px] font-mono transition-all"
+                style={{ background: "rgba(255,80,80,0.06)", border: "1px solid rgba(255,80,80,0.18)" }}
+              >
+                <span className="text-[10px] tracking-[0.06em] text-[#ff5050aa]">CASH OUT</span>
+                <div className="flex items-center gap-[4px]">
+                  <CoinIcon color="#ff5050" />
+                  <span className="text-[13px] font-bold text-[#ff5050] tabular-nums">
+                    {cashoutValue.toLocaleString()}
+                  </span>
+                </div>
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Prediction cards */}
       <div className="flex flex-col gap-3.5 md:flex-row">
@@ -218,7 +295,9 @@ export default function PredictForm({ match, initialSentiment, initialPick, sign
           const isSelected = pick === opt.key;
           const dimmed = pick !== null && !isSelected;
           const isHov = hov === opt.key;
-          const reward = estimateReward(opt.key, sentiment, pick !== opt.key);
+          const reward = isSelected && betAmount !== null
+            ? estimateReward(opt.key, sentiment, false, betAmount)
+            : estimateReward(opt.key, sentiment, pick !== opt.key);
           const pctVal = pct[opt.key];
 
           return (
@@ -309,7 +388,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, sign
                     color: pick !== null ? "#2a2a2a" : isHov ? opt.color : "#3a3a3a",
                   }}
                 >
-                  {pick !== null ? "—" : `Pick ${teamLabel(opt)}`}
+                  {pick !== null ? "—" : `Bet on ${teamLabel(opt)}`}
                 </div>
               )}
             </div>
@@ -325,6 +404,21 @@ export default function PredictForm({ match, initialSentiment, initialPick, sign
         </p>
       )}
       {err && <p className="mt-3 text-center text-sm text-red-400">{err}</p>}
+
+      {modalOutcome && (() => {
+        const opt = OPTS.find((o) => o.key === modalOutcome)!;
+        return (
+          <BetModal
+            outcome={modalOutcome}
+            teamLabel={modalOutcome === "home" ? match.home_team : modalOutcome === "away" ? match.away_team : "Draw"}
+            color={opt.color}
+            sentiment={sentiment}
+            userCoins={coins}
+            onConfirm={handleModalConfirm}
+            onCancel={() => setModalOutcome(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

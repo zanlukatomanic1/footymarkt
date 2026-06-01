@@ -22,6 +22,7 @@ export type Prediction = {
   user_id: string;
   match_id: string;
   prediction: Outcome;
+  bet_amount: number;
   coins_earned: number;
   was_correct: boolean | null;
   created_at: string;
