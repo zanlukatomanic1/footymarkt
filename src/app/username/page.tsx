@@ -16,23 +16,17 @@ export default function UsernamePage() {
     setErr(null);
     const clean = username.trim().toLowerCase();
     if (!/^[a-z0-9_]{3,20}$/.test(clean)) {
-      setErr("3–20 chars, lowercase letters, numbers, underscore.");
+      setErr("3–20 chars. Lowercase letters, numbers, underscore only.");
       return;
     }
     setBusy(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/login");
-      return;
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+
     const { error } = await supabase
-      .from("users")
-      .update({ username: clean })
-      .eq("id", user.id);
+      .from("users").update({ username: clean }).eq("id", user.id);
     if (error) {
-      setErr(error.message.includes("unique") ? "Username taken." : error.message);
+      setErr(error.message.includes("unique") ? "Username taken — try another." : error.message);
       setBusy(false);
       return;
     }
@@ -41,27 +35,36 @@ export default function UsernamePage() {
   };
 
   return (
-    <div className="mt-16">
-      <h1 className="text-xl font-semibold">Pick a username</h1>
-      <p className="mt-1 text-sm text-ink-muted">
-        Shown on leaderboards. You can't change it later.
-      </p>
-      <form onSubmit={submit} className="mt-6 space-y-3">
-        <input
-          autoFocus
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="e.g. midfield_maestro"
-          className="w-full rounded-xl border border-border bg-bg-elevated px-4 py-3 outline-none focus:border-brand"
-        />
-        {err && <p className="text-sm text-red-400">{err}</p>}
-        <button
-          disabled={busy}
-          className="w-full rounded-xl bg-brand py-3 font-medium text-bg disabled:opacity-50"
-        >
-          {busy ? "Saving…" : "Continue"}
-        </button>
-      </form>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-page px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 text-center">
+          <div className="font-display text-[20px] font-bold text-white">Pick a username</div>
+          <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
+            Shown on leaderboards. Can't be changed later.
+          </p>
+        </div>
+
+        <form onSubmit={submit} className="rounded-[14px] border border-line bg-card p-6 space-y-4">
+          <input
+            autoFocus
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="e.g. midfield_maestro"
+            className="w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] font-sans text-[13.5px] text-[#e0e0e0]"
+          />
+          {err && <p className="text-[12px] text-red-400">{err}</p>}
+          <button
+            disabled={busy}
+            className="w-full rounded-[8px] py-[11px] text-[13.5px] font-semibold transition-all disabled:opacity-50"
+            style={{
+              background: username.trim() && !busy ? "#00ff87" : "#1a1a1a",
+              color: username.trim() && !busy ? "#080808" : "#2a2a2a",
+            }}
+          >
+            {busy ? "Saving…" : "Continue →"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

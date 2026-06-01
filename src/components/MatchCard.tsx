@@ -1,90 +1,190 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Match, Outcome, Sentiment } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+import SentimentBar from "@/components/SentimentBar";
+import { teamData } from "@/lib/teamData";
+import { fmtKickoff } from "@/lib/dates";
 import { sentimentPct } from "@/lib/coins";
+import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 type Props = {
   match: Match;
   sentiment: Sentiment;
   userPick?: Outcome | null;
+  signedIn: boolean;
 };
 
-function fmtKickoff(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+const PICK_COLOR: Record<Outcome, string> = {
+  home: "#00ff87",
+  draw: "#666666",
+  away: "#4d7cff",
+};
 
-function Bar({ label, pct, picked }: { label: string; pct: number; picked: boolean }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-baseline justify-between text-xs">
-        <span
-          className={picked ? "font-semibold text-brand" : "text-ink-muted"}
-        >
-          {label}
-        </span>
-        <span className="tabular-nums text-ink">{pct.toFixed(0)}%</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-bg-elevated">
-        <div
-          className={picked ? "h-full bg-brand" : "h-full bg-ink-dim"}
-          style={{ width: `${Math.max(pct, 2)}%` }}
-        />
-      </div>
-    </div>
-  );
-}
+export default function MatchCard({ match, sentiment, userPick, signedIn }: Props) {
+  const router = useRouter();
+  const supabase = createClient();
 
-export default function MatchCard({ match, sentiment, userPick }: Props) {
-  const pct = sentimentPct(sentiment);
-  const now = Date.now();
-  const live =
-    new Date(match.kickoff_at).getTime() <= now && match.result === null;
+  const [pick, setPick] = useState<Outcome | null>(userPick ?? null);
+  const [sent, setSent] = useState<Sentiment>(sentiment);
+  const [hov, setHov] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const home = teamData(match.home_team);
+  const away = teamData(match.away_team);
+  const pct = sentimentPct(sent);
+  const locked = new Date(match.kickoff_at).getTime() <= Date.now() || match.result !== null;
+
+
+  const handlePredict = async (e: React.MouseEvent, choice: Outcome) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!signedIn) { router.push("/login"); return; }
+    if (busy || locked) return;
+
+    setBusy(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+
+    await supabase.from("predictions").upsert(
+      { user_id: user.id, match_id: match.id, prediction: choice },
+      { onConflict: "user_id,match_id" }
+    );
+
+    setSent((s) => {
+      const n = { ...s };
+      if (pick !== null) {
+        n[`${pick}_count` as const] = Math.max(0, n[`${pick}_count` as const] - 1);
+      } else {
+        n.total_count += 1;
+      }
+      n[`${choice}_count` as const] += 1;
+      return n;
+    });
+    setPick(choice);
+    setBusy(false);
+  };
 
   return (
     <Link
       href={`/match/${match.id}`}
-      className="block rounded-2xl border border-border bg-bg-card p-4 shadow-card transition hover:border-border-strong"
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className="block rounded-[12px] p-[18px] transition-all duration-150"
+      style={{
+        background: hov ? "#171717" : "#141414",
+        border: `1px solid ${hov ? "#2c2c2c" : "#1e1e1e"}`,
+        boxShadow: hov ? "0 0 0 1px rgba(0,255,135,0.04)" : "none",
+      }}
     >
-      <div className="flex items-center justify-between text-xs text-ink-muted">
-        <span className="uppercase tracking-wider">{match.competition}</span>
-        <span className="flex items-center gap-1.5">
-          {live && (
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[10.5px] text-ink-faint tracking-[0.04em]">
+          {match.competition}
+        </span>
+        <span className="font-mono text-[10.5px] text-ink-faint">
+          {locked && match.result === null ? (
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+              Live
+            </span>
+          ) : (
+            fmtKickoff(match.kickoff_at)
           )}
-          {live ? "Live" : fmtKickoff(match.kickoff_at)}
         </span>
       </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex-1 text-base font-medium">{match.home_team}</div>
-        <div className="px-2 text-xs text-ink-dim">vs</div>
-        <div className="flex-1 text-right text-base font-medium">{match.away_team}</div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <Bar label="Home" pct={pct.home} picked={userPick === "home"} />
-        <Bar label="Draw" pct={pct.draw} picked={userPick === "draw"} />
-        <Bar label="Away" pct={pct.away} picked={userPick === "away"} />
-      </div>
-
-      <div className="mt-4 flex items-center justify-between text-xs">
-        <span className="text-ink-dim">
-          {sentiment.total_count} prediction{sentiment.total_count === 1 ? "" : "s"}
+      {/* Teams */}
+      <div className="mt-3.5 flex items-start justify-between gap-2">
+        <div className="flex flex-1 flex-col gap-[3px]">
+          {home.flag ? (
+            <img src={home.flag} alt={match.home_team} className="h-[22px] w-[22px] rounded-sm object-cover" />
+          ) : (
+            <span className="text-[22px] leading-none">🏳️</span>
+          )}
+          <span className="text-[13px] font-semibold text-[#e0e0e0] tracking-[-0.2px] leading-[1.2]">
+            {match.home_team}
+          </span>
+          <span className="font-mono text-[9.5px] text-[#333] tracking-[0.1em]">
+            {home.code}
+          </span>
+        </div>
+        <span className="font-mono text-[10px] text-[#2a2a2a] tracking-[0.12em] flex-shrink-0 pt-1">
+          VS
         </span>
-        {userPick ? (
-          <span className="rounded-full border border-border-strong px-2 py-0.5 text-ink-muted">
-            Your pick: <span className="text-brand">{userPick}</span>
+        <div className="flex flex-1 flex-col items-end gap-[3px]">
+          {away.flag ? (
+            <img src={away.flag} alt={match.away_team} className="h-[22px] w-[22px] rounded-sm object-cover" />
+          ) : (
+            <span className="text-[22px] leading-none">🏳️</span>
+          )}
+          <span className="text-right text-[13px] font-semibold text-[#e0e0e0] tracking-[-0.2px] leading-[1.2]">
+            {match.away_team}
           </span>
-        ) : (
-          <span className="rounded-full bg-brand px-3 py-1 font-medium text-bg">
-            Predict
+          <span className="font-mono text-[9.5px] text-[#333] tracking-[0.1em]">
+            {away.code}
           </span>
+        </div>
+      </div>
+
+      {/* Sentiment bar */}
+      <div className="mt-3.5">
+        <SentimentBar home={pct.home} draw={pct.draw} away={pct.away} />
+      </div>
+
+      {/* Footer */}
+      <div className="mt-3.5 flex items-center justify-between pt-[2px]">
+        <span className="font-mono text-[10.5px] text-[#2e2e2e]">
+          {sent.total_count.toLocaleString()} preds
+        </span>
+
+        {match.result !== null ? (
+          <span
+            className="rounded-[5px] px-[9px] py-[3px] font-mono text-[10.5px] font-bold tracking-[0.05em]"
+            style={{
+              color: PICK_COLOR[match.result],
+              background: `${PICK_COLOR[match.result]}12`,
+              border: `1px solid ${PICK_COLOR[match.result]}28`,
+            }}
+          >
+            {match.result === "home" ? home.code : match.result === "away" ? away.code : "DRAW"}
+          </span>
+        ) : pick ? (
+          <div
+            className="flex items-center gap-[5px] rounded-[6px] px-[10px] py-[4px] font-mono text-[10.5px] font-bold tracking-[0.06em]"
+            style={{
+              color: PICK_COLOR[pick],
+              background: `${PICK_COLOR[pick]}12`,
+              border: `1px solid ${PICK_COLOR[pick]}30`,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {pick === "home" ? home.code : pick === "away" ? away.code : "D"}
+          </div>
+        ) : locked ? null : (
+          <div className="flex gap-[5px]" onClick={(e) => e.preventDefault()}>
+            {([["home", home.code, "#00ff87"], ["draw", "D", "#555555"], ["away", away.code, "#4d7cff"]] as const).map(
+              ([k, lbl, col]) => (
+                <button
+                  key={k}
+                  disabled={busy}
+                  onClick={(e) => handlePredict(e, k as Outcome)}
+                  className="rounded-[6px] px-[9px] py-[4px] font-mono text-[10px] font-semibold tracking-[0.06em] transition-colors disabled:opacity-50"
+                  style={{
+                    background: "transparent",
+                    border: `1px solid ${col}28`,
+                    color: col,
+                  }}
+                >
+                  {lbl}
+                </button>
+              )
+            )}
+          </div>
         )}
       </div>
     </Link>

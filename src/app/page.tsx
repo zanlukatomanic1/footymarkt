@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import MatchCard from "@/components/MatchCard";
+import TopBar from "@/components/TopBar";
+import HomeClient from "@/components/HomeClient";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -11,77 +11,69 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Show upcoming + live matches (kickoff in past but no result) for WC2026.
   const { data: matches } = await supabase
     .from("matches")
     .select("*")
     .eq("competition", "WC2026")
-    .is("result", null)
     .order("kickoff_at", { ascending: true });
 
-  const { data: sentiments } = await supabase
-    .from("match_sentiment")
-    .select("*");
+  const { data: sentiments } = await supabase.from("match_sentiment").select("*");
 
   let userPicks: Record<string, Outcome> = {};
+  let stats: { predictions: number; correct: number; coins: number; rank: number } | null = null;
+
   if (user) {
     const { data: preds } = await supabase
       .from("predictions")
-      .select("match_id,prediction")
+      .select("match_id, prediction")
       .eq("user_id", user.id);
     userPicks = Object.fromEntries(
       (preds ?? []).map((p) => [p.match_id, p.prediction as Outcome])
     );
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("coins")
+      .eq("id", user.id)
+      .single();
+
+    const { count: correctCount } = await supabase
+      .from("predictions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("was_correct", true);
+
+    const userCoins = profile?.coins ?? 0;
+    const { count: rankCount } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .gt("coins", userCoins);
+
+    stats = {
+      predictions: Object.keys(userPicks).length,
+      correct: correctCount ?? 0,
+      coins: userCoins,
+      rank: (rankCount ?? 0) + 1,
+    };
   }
 
-  const sentMap = new Map<string, Sentiment>(
-    (sentiments ?? []).map((s: Sentiment) => [s.match_id, s])
-  );
+  const sentMap: Record<string, Sentiment> = {};
+  for (const s of sentiments ?? []) {
+    sentMap[(s as Sentiment).match_id] = s as Sentiment;
+  }
 
-  const list = (matches ?? []) as Match[];
+  const openCount = (matches ?? []).filter((m: any) => !m.result).length;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-end justify-between pt-2">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Markets</h1>
-          <p className="text-xs text-ink-muted">
-            Crowd-set odds. World Cup 2026.
-          </p>
-        </div>
-        {!user && (
-          <Link
-            href="/login"
-            className="rounded-full bg-brand px-3 py-1.5 text-xs font-medium text-bg"
-          >
-            Sign in to predict
-          </Link>
-        )}
-      </div>
-
-      {list.length === 0 && (
-        <div className="rounded-2xl border border-border bg-bg-card p-8 text-center text-sm text-ink-muted">
-          No upcoming matches yet.
-        </div>
-      )}
-
-      {list.map((m) => {
-        const s = sentMap.get(m.id) ?? {
-          match_id: m.id,
-          home_count: 0,
-          draw_count: 0,
-          away_count: 0,
-          total_count: 0,
-        };
-        return (
-          <MatchCard
-            key={m.id}
-            match={m}
-            sentiment={s}
-            userPick={userPicks[m.id] ?? null}
-          />
-        );
-      })}
-    </div>
+    <>
+      <TopBar title="Today's Matches" subtitle={`WC 2026 · ${openCount} open predictions`} />
+      <HomeClient
+        matches={(matches as Match[] | null) ?? []}
+        sentMap={sentMap}
+        userPicks={userPicks}
+        signedIn={!!user}
+        stats={stats}
+      />
+    </>
   );
 }

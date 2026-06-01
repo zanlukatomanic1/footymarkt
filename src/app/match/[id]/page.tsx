@@ -1,34 +1,21 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import TopBar from "@/components/TopBar";
 import PredictForm from "@/components/PredictForm";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function MatchPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function MatchPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: match } = await supabase
-    .from("matches")
-    .select("*")
-    .eq("id", params.id)
-    .single();
-
+    .from("matches").select("*").eq("id", params.id).single();
   if (!match) notFound();
 
   const { data: sentiment } = await supabase
-    .from("match_sentiment")
-    .select("*")
-    .eq("match_id", params.id)
-    .single();
+    .from("match_sentiment").select("*").eq("match_id", params.id).single();
 
   let pick: Outcome | null = null;
   if (user) {
@@ -42,13 +29,11 @@ export default async function MatchPage({
   }
 
   return (
-    <div className="space-y-4">
-      <Link
-        href="/"
-        className="inline-block text-xs text-ink-muted hover:text-ink"
-      >
-        ← Back to markets
-      </Link>
+    <>
+      <TopBar
+        title="Match Prediction"
+        subtitle={`${(match as Match).competition} · ${(match as Match).home_team} vs ${(match as Match).away_team}`}
+      />
       <PredictForm
         match={match as Match}
         initialSentiment={(sentiment as Sentiment) ?? {
@@ -61,6 +46,6 @@ export default async function MatchPage({
         initialPick={pick}
         signedIn={!!user}
       />
-    </div>
+    </>
   );
 }

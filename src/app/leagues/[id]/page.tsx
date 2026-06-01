@@ -1,103 +1,285 @@
-import { notFound, redirect } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { useParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
-export const dynamic = "force-dynamic";
+const RANK_COLOR: Record<number, string> = { 1: "#FFD700", 2: "#a8a8a8", 3: "#cd8a3a" };
 
-export default async function LeaguePage({
-  params,
-}: {
-  params: { id: string };
-}) {
+type Member = {
+  id: string;
+  username: string;
+  coins: number;
+  correct: number;
+  total: number;
+  rate: number;
+  isMe: boolean;
+};
+
+export default function LeaguePage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
-  const { data: league } = await supabase
-    .from("leagues")
-    .select("*")
-    .eq("id", params.id)
-    .single();
-  if (!league) notFound();
+  const [league, setLeague] = useState<{ name: string; invite_code: string } | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [totalPreds, setTotalPreds] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const { data: members } = await supabase
-    .from("league_members")
-    .select("user_id, users(id, username, coins)")
-    .eq("league_id", params.id);
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
 
-  const rows = (members ?? [])
-    .map((m: any) => m.users)
-    .filter(Boolean) as { id: string; username: string | null; coins: number }[];
+      const { data: lg } = await supabase
+        .from("leagues").select("name, invite_code").eq("id", params.id).single();
+      if (!lg) { router.push("/leagues"); return; }
+      setLeague(lg);
 
-  // Correct-prediction counts for these members only.
-  const ids = rows.map((r) => r.id);
-  const { data: correct } = ids.length
-    ? await supabase
-        .from("predictions")
-        .select("user_id, was_correct")
-        .eq("was_correct", true)
-        .in("user_id", ids)
-    : { data: [] as { user_id: string }[] };
+      const { data: memberRows } = await supabase
+        .from("league_members")
+        .select("user_id, users(id, username, coins)")
+        .eq("league_id", params.id);
 
-  const correctMap = new Map<string, number>();
-  (correct ?? []).forEach((p: any) => {
-    correctMap.set(p.user_id, (correctMap.get(p.user_id) ?? 0) + 1);
-  });
+      const userIds = ((memberRows ?? []) as any[])
+        .map((m) => m.users?.id).filter(Boolean) as string[];
 
-  rows.sort((a, b) => b.coins - a.coins);
+      const { data: preds } = userIds.length
+        ? await supabase
+            .from("predictions")
+            .select("user_id, was_correct")
+            .in("user_id", userIds)
+        : { data: [] };
+
+      setTotalPreds((preds ?? []).length);
+
+      const correctMap = new Map<string, number>();
+      const totalMap = new Map<string, number>();
+      for (const p of preds ?? []) {
+        totalMap.set(p.user_id, (totalMap.get(p.user_id) ?? 0) + 1);
+        if (p.was_correct) correctMap.set(p.user_id, (correctMap.get(p.user_id) ?? 0) + 1);
+      }
+
+      const rows: Member[] = ((memberRows ?? []) as any[])
+        .map((m) => m.users).filter(Boolean)
+        .map((u: any) => {
+          const correct = correctMap.get(u.id) ?? 0;
+          const total = totalMap.get(u.id) ?? 0;
+          return {
+            id: u.id,
+            username: u.username ?? "—",
+            coins: u.coins ?? 0,
+            correct,
+            total,
+            rate: total > 0 ? (correct / total) * 100 : 0,
+            isMe: u.id === user.id,
+          };
+        })
+        .sort((a: Member, b: Member) => b.coins - a.coins);
+
+      setMembers(rows);
+      setLoading(false);
+    };
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
+
+  const handleCopy = () => {
+    if (!league) return;
+    navigator.clipboard.writeText(league.invite_code).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <span className="font-mono text-[11px] text-ink-faint">Loading…</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-5">
-      <Link href="/leagues" className="text-xs text-ink-muted hover:text-ink">
-        ← All leagues
+    <div className="p-[22px] md:p-6">
+      {/* Back */}
+      <Link href="/leagues" className="mb-[22px] flex w-fit items-center gap-[6px]">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        <span className="font-mono text-[12px] text-ink-faint">My Leagues</span>
       </Link>
 
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{league.name}</h1>
-        <p className="text-xs text-ink-muted">
-          Invite code:{" "}
-          <span className="font-mono text-ink">{league.invite_code}</span>
-        </p>
+      {/* League header card */}
+      <div className="mb-[22px] flex items-center justify-between rounded-[14px] border border-line bg-card px-6 py-[22px]">
+        <div>
+          <div className="font-display text-[22px] font-extrabold text-white tracking-[-0.5px] mb-[5px]">
+            {league?.name}
+          </div>
+          <div className="flex gap-4">
+            <span className="font-mono text-[12px] text-ink-faint">
+              {members.length} members
+            </span>
+            <span className="font-mono text-[12px] text-ink-faint">
+              {totalPreds} predictions
+            </span>
+          </div>
+        </div>
+
+        {/* Invite code */}
+        <div className="flex items-center gap-[10px] rounded-[10px] border border-line-strong bg-topbar px-4 py-[10px]">
+          <div>
+            <div className="mb-1 font-mono text-[9.5px] uppercase tracking-[0.1em] text-ink-faint">
+              Invite code
+            </div>
+            <code className="font-mono text-[15px] tracking-[0.1em] text-brand font-medium">
+              {league?.invite_code}
+            </code>
+          </div>
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-[5px] rounded-[7px] border px-[10px] py-[6px] font-mono text-[11px] transition-all duration-150"
+            style={{
+              background: copied ? "rgba(0,255,135,0.1)" : "#1a1a1a",
+              border: `1px solid ${copied ? "rgba(0,255,135,0.3)" : "#2a2a2a"}`,
+              color: copied ? "#00ff87" : "#555",
+            }}
+          >
+            {copied ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            )}
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-bg-card shadow-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-ink-muted">
-              <th className="px-4 py-3">#</th>
-              <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3 text-right">Correct</th>
-              <th className="px-4 py-3 text-right">Coins</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((u, i) => (
-              <tr key={u.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-ink-muted tabular-nums">
-                  {i + 1}
-                </td>
-                <td className="px-4 py-3 font-medium">
-                  {u.username ?? "—"}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-muted">
-                  {correctMap.get(u.id) ?? 0}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  <span className="text-brand">●</span> {u.coins}
-                </td>
+      {/* 2-column layout */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_280px]">
+        {/* Standings */}
+        <div className="overflow-hidden rounded-[12px] border border-line bg-card">
+          <div className="flex items-center justify-between border-b border-line-subtle px-5 py-3.5">
+            <span className="text-[12px] font-semibold text-[#bbb]">League Standings</span>
+            <span className="font-mono text-[10.5px] text-ink-ghost">WC 2026</span>
+          </div>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-[#181818]">
+                {["Rank", "Player", "Coins", "Correct", "Rate"].map((h, i) => (
+                  <th
+                    key={h}
+                    className="px-4 py-[9px] font-mono text-[10px] uppercase tracking-[0.09em] text-ink-ghost"
+                    style={{ textAlign: i > 1 ? "right" : i === 1 ? "left" : "center" }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
+            </thead>
+            <tbody>
+              {members.map((row, i) => {
+                const rank = i + 1;
+                const rc = RANK_COLOR[rank];
+                return (
+                  <tr
+                    key={row.id}
+                    className="border-b border-[#161616]"
+                    style={{ background: row.isMe ? "rgba(0,255,135,0.04)" : "transparent" }}
+                  >
+                    <td
+                      className="px-4 py-[10px] text-center"
+                      style={{
+                        borderLeft: `2px solid ${rank <= 3 ? rc : row.isMe ? "rgba(0,255,135,0.4)" : "transparent"}`,
+                      }}
+                    >
+                      {rank <= 3 ? (
+                        <span className="text-[14px]">{"🥇🥈🥉"[rank - 1]}</span>
+                      ) : (
+                        <span className="font-mono text-[11px] text-[#333]">#{rank}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-[10px]">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                          style={{
+                            background: row.isMe ? "linear-gradient(135deg,#00ff87,#4d7cff)" : "#1a1a1a",
+                            color: row.isMe ? "#0a0a0a" : "#333",
+                          }}
+                        >
+                          {row.username[0].toUpperCase()}
+                        </div>
+                        <span
+                          className="text-[12.5px]"
+                          style={{
+                            fontWeight: row.isMe ? 600 : 400,
+                            color: row.isMe ? "#00ff87" : rank <= 3 ? rc : "#aaa",
+                          }}
+                        >
+                          {row.isMe ? "you" : row.username}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums text-ink-muted">
+                      {row.coins.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums text-[#555]">
+                      {row.correct}
+                    </td>
+                    <td
+                      className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums"
+                      style={{ color: row.rate >= 65 ? "#00ff87" : "#666" }}
+                    >
+                      {row.rate.toFixed(1)}%
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Members list */}
+        <div className="overflow-hidden rounded-[12px] border border-line bg-card">
+          <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3.5">
+            <span className="text-[12px] font-semibold text-[#bbb]">Members</span>
+            <span className="font-mono text-[10.5px] text-ink-ghost">
+              {members.length} / 50
+            </span>
+          </div>
+          <div className="py-2">
+            {members.map((m, i) => (
+              <div
+                key={m.id}
+                className="flex items-center gap-[10px] px-4 py-2"
+                style={{ background: m.isMe ? "rgba(0,255,135,0.04)" : "transparent" }}
+              >
+                <div
+                  className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                  style={{
+                    background: m.isMe ? "linear-gradient(135deg,#00ff87,#4d7cff)" : "#1a1a1a",
+                    color: m.isMe ? "#0a0a0a" : "#333",
+                  }}
+                >
+                  {m.username[0].toUpperCase()}
+                </div>
+                <span
+                  className="flex-1 text-[12.5px]"
+                  style={{ color: m.isMe ? "#00ff87" : "#777" }}
+                >
+                  {m.isMe ? "you" : m.username}
+                </span>
+                {i < 3 && (
+                  <span className="text-[12px]" style={{ color: RANK_COLOR[i + 1] }}>
+                    #{i + 1}
+                  </span>
+                )}
+              </div>
             ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-ink-muted">
-                  No members yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );

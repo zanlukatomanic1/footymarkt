@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FootyMarkt — Design Mockups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f0f; --bg-card: #141414; --bg-sidebar: #0a0a0a;
+      --bg-el: #1a1a1a; --border: #222; --border-sub: #1a1a1a;
+      --accent: #00ff87; --blue: #4d7cff;
+      --text: #fff; --text2: #888; --text3: #444;
+      --gold: #FFD700; --silver: #a8a8a8; --bronze: #cd8a3a;
+      --font: 'DM Sans', system-ui, sans-serif;
+      --mono: 'DM Mono', monospace;
+      --disp: 'Syne', system-ui, sans-serif;
+    }
+    body {
+      background: #070707; font-family: var(--font);
+      color: var(--text); -webkit-font-smoothing: antialiased;
+      text-wrap: pretty;
+    }
+    .showcase { max-width: 1520px; margin: 0 auto; padding: 60px 36px 100px; }
+    .showcase-hd { margin-bottom: 72px; }
+    .showcase-hd h1 {
+      font-family: var(--disp); font-size: 50px; font-weight: 800;
+      letter-spacing: -2px; line-height: 1; color: var(--text);
+    }
+    .showcase-hd h1 em { color: var(--accent); font-style: normal; }
+    .showcase-hd p { margin-top: 10px; font-family: var(--mono); font-size: 13px; color: var(--text3); letter-spacing: 0.06em; }
+    .sec-wrap { margin-bottom: 88px; }
+    .sec-label { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .sec-num { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.14em; }
+    .sec-name { font-size: 13px; color: var(--text2); }
+    .sec-line { flex: 1; height: 1px; background: var(--border-sub); }
+    .mockup { width: 100%; height: 900px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+    * { scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+    button { font-family: var(--font); }
+    select { font-family: var(--mono); }
+  </style>
+</head>
+<body style="font-family: DM Sans">
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="fm-shared.jsx"></script>
+  <script type="text/babel" src="fm-home.jsx"></script>
+  <script type="text/babel" src="fm-match.jsx"></script>
+  <script type="text/babel" src="fm-leaderboard.jsx"></script>
+  <script type="text/babel" src="fm-leagues.jsx"></script>
+  <script type="text/babel" src="fm-admin.jsx"></script>
+  <script type="text/babel" src="fm-app.jsx"></script>
+</body>
+</html>
