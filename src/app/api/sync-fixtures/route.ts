@@ -41,12 +41,11 @@ export async function POST() {
     }));
 
   const admin = createAdminClient();
-  const { error, count } = await admin
+  const { error } = await admin
     .from("matches")
-    .upsert(rows, { onConflict: "external_id", ignoreDuplicates: false })
-    .select("id", { count: "exact", head: true });
+    .upsert(rows, { onConflict: "external_id", ignoreDuplicates: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true, upserted: count ?? rows.length });
+  return NextResponse.json({ ok: true, upserted: rows.length });
 }

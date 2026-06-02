@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import MatchCard from "@/components/MatchCard";
+import { createClient } from "@/lib/supabase/client";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 type Props = {
@@ -52,7 +53,33 @@ function fmtTime(iso: string): string {
 
 export default function HomeClient({ matches, sentMap, userPicks, signedIn, stats }: Props) {
   const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [sentiments, setSentiments] = useState<Record<string, Sentiment>>(sentMap);
+  const [live, setLive] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("predictions-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "predictions" },
+        async (payload: any) => {
+          const matchId = payload.new?.match_id ?? payload.old?.match_id;
+          if (!matchId) return;
+          const { data } = await supabase
+            .from("match_sentiment")
+            .select("*")
+            .eq("match_id", matchId)
+            .single();
+          if (data) setSentiments((prev) => ({ ...prev, [matchId]: data as Sentiment }));
+        }
+      )
+      .subscribe((status) => {
+        setLive(status === "SUBSCRIBED");
+      });
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // All unique match days in order
   const allDays = useMemo(() => {
@@ -120,7 +147,15 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
         <div className="mb-2 flex items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-ghost">Match Days</span>
           <div className="h-px flex-1 bg-line-subtle" />
-          <span className="font-mono text-[10px] text-ink-silent">{allDays.length} days · {matches.length} fixtures</span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-[6px] w-[6px] rounded-full"
+              style={{ background: live ? "#00ff87" : "#333", boxShadow: live ? "0 0 6px #00ff87" : "none" }}
+            />
+            <span className="font-mono text-[10px] text-ink-silent">
+              {live ? "live" : "connecting…"} · {allDays.length} days · {matches.length} fixtures
+            </span>
+          </div>
         </div>
         <div
           ref={stripRef}
@@ -210,7 +245,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
               <MatchCard
                 key={m.id}
                 match={m}
-                sentiment={sentMap[m.id] ?? defaultSent(m.id)}
+                sentiment={sentiments[m.id] ?? defaultSent(m.id)}
                 userPick={userPicks[m.id] ?? null}
                 signedIn={signedIn}
               />

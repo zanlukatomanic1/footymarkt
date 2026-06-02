@@ -97,20 +97,8 @@ export default function Sidebar({ username, coins, isAdmin, signedIn }: Props) {
       style={{ height: "100vh" }}
     >
       {/* Logo */}
-      <div className="px-[18px] pt-[22px] pb-[26px]">
-        <div className="flex items-center gap-[10px] select-none">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-[8px] flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #00ff87, #00cc6e)" }}
-          >
-            <span className="font-display text-[12.5px] font-extrabold tracking-[-0.5px] text-[#080808]">
-              FM
-            </span>
-          </div>
-          <span className="font-display text-[16px] font-bold tracking-[-0.4px] text-white">
-            Footy<span className="text-brand">Markt</span>
-          </span>
-        </div>
+      <div className="px-[14px] py-[14px]">
+        <img src="/logo.png" alt="FootyMarkt" className="h-20 w-[200px] object-contain object-left" />
       </div>
 
       {/* Nav */}

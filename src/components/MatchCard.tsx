@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -31,6 +31,9 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
   const [sent, setSent] = useState<Sentiment>(sentiment);
   const [hov, setHov] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Sync sentiment when real-time update arrives from parent
+  useEffect(() => { setSent(sentiment); }, [sentiment]);
 
   const home = teamData(match.home_team);
   const away = teamData(match.away_team);

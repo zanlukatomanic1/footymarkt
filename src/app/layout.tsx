@@ -24,6 +24,7 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "FootyMarkt",
   description: "Social prediction market for WC 2026. Crowd-set odds.",
+  icons: { icon: "/logo.ico" },
 };
 
 export default async function RootLayout({
