@@ -191,7 +191,21 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
           </div>
 
           <div className="flex-shrink-0 w-32 text-center">
-            <div className="mb-2 font-mono text-[11px] tracking-[0.18em] text-[#2a2a2a]">VS</div>
+            {match.result !== null && match.home_score !== null && match.away_score !== null ? (
+              <>
+                <div className="mb-1 font-mono text-[32px] font-bold tabular-nums text-white leading-none">
+                  {match.home_score} – {match.away_score}
+                </div>
+                <div className="mb-2 font-mono text-[10px] tracking-[0.12em] text-ink-ghost">FULL TIME</div>
+              </>
+            ) : locked && match.result === null ? (
+              <div className="mb-2 flex items-center justify-center gap-1.5 font-mono text-[12px] font-semibold text-[#ff6b35]">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#ff6b35]" />
+                LIVE
+              </div>
+            ) : (
+              <div className="mb-2 font-mono text-[11px] tracking-[0.18em] text-[#2a2a2a]">VS</div>
+            )}
             <SentimentBar home={pct.home} draw={pct.draw} away={pct.away} height={4} labels={false} />
             <div className="mt-[6px] font-mono text-[10px] text-[#2a2a2a]">
               {pct.home.toFixed(0)}% · {pct.draw.toFixed(0)}% · {pct.away.toFixed(0)}%
@@ -399,7 +413,9 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
       {locked && (
         <p className="mt-4 text-center font-mono text-[11px] text-ink-faint">
           {match.result
-            ? `Result: ${match.result === "home" ? match.home_team : match.result === "away" ? match.away_team : "Draw"}`
+            ? match.home_score !== null && match.away_score !== null
+              ? `${match.home_team} ${match.home_score} – ${match.away_score} ${match.away_team}`
+              : `Result: ${match.result === "home" ? match.home_team : match.result === "away" ? match.away_team : "Draw"}`
             : "Predictions locked — match has kicked off."}
         </p>
       )}

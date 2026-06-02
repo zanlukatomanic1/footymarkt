@@ -85,14 +85,7 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
           {match.competition}
         </span>
         <span className="font-mono text-[10.5px] text-ink-faint">
-          {locked && match.result === null ? (
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
-              Live
-            </span>
-          ) : (
-            fmtKickoff(match.kickoff_at)
-          )}
+          {match.result !== null ? "FT" : fmtKickoff(match.kickoff_at)}
         </span>
       </div>
 
@@ -111,9 +104,23 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
             {home.code}
           </span>
         </div>
-        <span className="font-mono text-[10px] text-[#2a2a2a] tracking-[0.12em] flex-shrink-0 pt-1">
-          VS
-        </span>
+
+        {/* Center: score if settled, LIVE if in progress, VS if upcoming */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-[3px] pt-1">
+          {match.result !== null && match.home_score !== null && match.away_score !== null ? (
+            <span className="font-mono text-[18px] font-bold tabular-nums text-white leading-none">
+              {match.home_score} – {match.away_score}
+            </span>
+          ) : locked && match.result === null ? (
+            <span className="flex items-center gap-1 font-mono text-[10px] text-[#ff6b35]">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#ff6b35]" />
+              LIVE
+            </span>
+          ) : (
+            <span className="font-mono text-[10px] text-[#2a2a2a] tracking-[0.12em]">VS</span>
+          )}
+        </div>
+
         <div className="flex flex-1 flex-col items-end gap-[3px]">
           {away.flag ? (
             <img src={away.flag} alt={match.away_team} className="h-[22px] w-[22px] rounded-sm object-cover" />

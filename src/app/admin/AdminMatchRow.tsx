@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { fmtKickoff } from "@/lib/dates";
 import type { Match, Outcome } from "@/lib/types";
 
 const RESULT_COLOR: Record<string, string> = {
@@ -28,12 +29,6 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
   const isDirty = draft !== (match.result ?? "");
   const hasSaved = saved && match.result;
   const rc = match.result ? RESULT_COLOR[match.result] : "#555";
-
-  const fmtKickoff = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
-      " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  };
 
   const handleSave = async () => {
     if (!draft || saving) return;

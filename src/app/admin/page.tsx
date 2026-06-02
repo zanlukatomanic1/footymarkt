@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/TopBar";
 import AdminMatchRow from "./AdminMatchRow";
+import SyncButtons from "./SyncButtons";
 import type { Match } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +54,7 @@ export default async function AdminPage() {
     <>
       <TopBar title="Match Results" subtitle="Admin · WC 2026" />
       <div className="p-[22px] md:p-6">
+        <SyncButtons />
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           {[

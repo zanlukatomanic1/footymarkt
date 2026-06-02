@@ -7,6 +7,8 @@ export type Match = {
   kickoff_at: string;
   result: Outcome | null;
   competition: string;
+  home_score: number | null;
+  away_score: number | null;
 };
 
 export type Sentiment = {

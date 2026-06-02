@@ -22,11 +22,14 @@ export default function LeaguePage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [league, setLeague] = useState<{ name: string; invite_code: string } | null>(null);
+  const [league, setLeague] = useState<{ name: string; invite_code: string; created_by: string } | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [totalPreds, setTotalPreds] = useState(0);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -34,9 +37,10 @@ export default function LeaguePage() {
       if (!user) { router.push("/login"); return; }
 
       const { data: lg } = await supabase
-        .from("leagues").select("name, invite_code").eq("id", params.id).single();
+        .from("leagues").select("name, invite_code, created_by").eq("id", params.id).single();
       if (!lg) { router.push("/leagues"); return; }
       setLeague(lg);
+      setIsOwner(lg.created_by === user.id);
 
       const { data: memberRows } = await supabase
         .from("league_members")
@@ -93,6 +97,14 @@ export default function LeaguePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    const { error } = await supabase.from("leagues").delete().eq("id", params.id);
+    if (error) { setDeleting(false); setConfirmDelete(false); return; }
+    router.push("/leagues");
+    router.refresh();
+  };
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -127,6 +139,43 @@ export default function LeaguePage() {
           </div>
         </div>
 
+        {/* Right side: invite code + delete */}
+        <div className="flex items-center gap-3">
+        {isOwner && (
+          confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] text-[#ff5050]">Delete league?</span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-[7px] px-3 py-[6px] font-mono text-[11px] font-semibold transition-all"
+                style={{ background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.35)", color: "#ff5050" }}
+              >
+                {deleting ? "Deleting…" : "Confirm"}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="rounded-[7px] px-3 py-[6px] font-mono text-[11px] text-ink-faint transition-colors hover:text-ink"
+                style={{ background: "#111", border: "1px solid #222" }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-[5px] rounded-[7px] px-3 py-[6px] font-mono text-[11px] text-[#ff5050] transition-all hover:bg-[rgba(255,80,80,0.08)]"
+              style={{ border: "1px solid rgba(255,80,80,0.2)" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+              Delete
+            </button>
+          )
+        )}
+
         {/* Invite code */}
         <div className="flex items-center gap-[10px] rounded-[10px] border border-line-strong bg-topbar px-4 py-[10px]">
           <div>
@@ -154,6 +203,7 @@ export default function LeaguePage() {
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
+        </div> {/* end right side */}
       </div>
 
       {/* 2-column layout */}
