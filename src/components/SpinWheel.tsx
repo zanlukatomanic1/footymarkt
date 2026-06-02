@@ -130,7 +130,7 @@ export default function SpinWheel({ initialHasSpun }: Props) {
                     <text
                       y="-5"
                       textAnchor="middle"
-                      fontSize={seg.coins === 1000 ? "12" : "14"}
+                      fontSize="14"
                       fontWeight="700"
                       fill={seg.color}
                       fontFamily="'DM Mono', 'Courier New', monospace"
