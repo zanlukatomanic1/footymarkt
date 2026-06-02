@@ -16,23 +16,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-page px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="mb-8 flex flex-col items-center gap-4">
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-[12px]"
-            style={{ background: "linear-gradient(135deg, #00ff87, #00cc6e)" }}
-          >
-            <span className="font-display text-[18px] font-extrabold tracking-[-0.5px] text-[#080808]">
-              FM
-            </span>
-          </div>
-          <div className="text-center">
-            <div className="font-display text-[22px] font-bold text-white tracking-[-0.4px]">
-              Footy<span className="text-brand">Markt</span>
-            </div>
-            <p className="mt-1.5 text-[13px] text-ink-faint">
-              Crowd-set odds. Contrarian picks pay more.
-            </p>
-          </div>
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <img src="/logo.png" alt="FootyMarkt" className="h-16 w-auto object-contain" />
+          <p className="text-[13px] text-ink-faint">
+            Crowd-set odds. Contrarian picks pay more.
+          </p>
         </div>
 
         {/* Card */}

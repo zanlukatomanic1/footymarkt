@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -5,6 +6,11 @@ import TopBar from "@/components/TopBar";
 import LeagueActions from "./LeagueActions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "My Leagues",
+  description: "Compete with friends in private WC 2026 prediction leagues on FootyMarkt.",
+};
 
 const RANK_COLOR: Record<number, string> = {
   1: "#FFD700",

@@ -1,10 +1,39 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/TopBar";
 import PredictForm from "@/components/PredictForm";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const supabase = createClient();
+  const { data: match } = await supabase
+    .from("matches").select("*").eq("id", params.id).single();
+  if (!match) return { title: "Match Not Found" };
+
+  const { data: sentiment } = await supabase
+    .from("match_sentiment").select("*").eq("match_id", params.id).single();
+
+  const total = sentiment?.total_count ?? 0;
+  const homeP = total > 0 ? Math.round(((sentiment?.home_count ?? 0) / total) * 100) : null;
+  const awayP = total > 0 ? Math.round(((sentiment?.away_count ?? 0) / total) * 100) : null;
+
+  const desc =
+    homeP !== null
+      ? `${homeP}% back ${match.home_team} · ${awayP}% back ${match.away_team}. Predict the WC 2026 result.`
+      : `Predict ${match.home_team} vs ${match.away_team} in WC 2026.`;
+
+  return {
+    title: `${match.home_team} vs ${match.away_team}`,
+    description: desc,
+    openGraph: {
+      title: `${match.home_team} vs ${match.away_team}`,
+      description: desc,
+    },
+  };
+}
 
 export default async function MatchPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -35,14 +64,31 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
     userCoins = profileRes.data?.coins ?? 0;
   }
 
+  const m = match as Match;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: `${m.home_team} vs ${m.away_team}`,
+    startDate: m.kickoff_at,
+    sport: "Football",
+    competitor: [
+      { "@type": "SportsTeam", name: m.home_team },
+      { "@type": "SportsTeam", name: m.away_team },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <TopBar
         title="Match Prediction"
-        subtitle={`${(match as Match).competition} · ${(match as Match).home_team} vs ${(match as Match).away_team}`}
+        subtitle={`${m.competition} · ${m.home_team} vs ${m.away_team}`}
       />
       <PredictForm
-        match={match as Match}
+        match={m}
         initialSentiment={(sentiment as Sentiment) ?? {
           match_id: params.id,
           home_count: 0,

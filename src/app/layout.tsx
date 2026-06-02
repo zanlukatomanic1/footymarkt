@@ -22,8 +22,16 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "FootyMarkt",
-  description: "Social prediction market for WC 2026. Crowd-set odds.",
+  title: { default: "FootyMarkt", template: "%s | FootyMarkt" },
+  description: "Social prediction market for WC 2026. The crowd sets the odds.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://footymarkt.com"),
+  openGraph: {
+    siteName: "FootyMarkt",
+    type: "website",
+    locale: "en_US",
+    description: "Social prediction market for WC 2026. The crowd sets the odds.",
+  },
+  twitter: { card: "summary" },
   icons: { icon: "/logo.ico" },
 };
 

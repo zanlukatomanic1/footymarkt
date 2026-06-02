@@ -1,9 +1,19 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/TopBar";
 import HomeClient from "@/components/HomeClient";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "FootyMarkt — WC 2026 Prediction Market",
+  description: "Predict World Cup 2026 matches. The crowd sets the odds — no bookmaker.",
+  openGraph: {
+    title: "FootyMarkt — WC 2026 Prediction Market",
+    description: "Predict World Cup 2026 matches. The crowd sets the odds — no bookmaker.",
+  },
+};
 
 export default async function Home() {
   const supabase = createClient();

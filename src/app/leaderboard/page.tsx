@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/TopBar";
 import LeaderboardClient from "@/components/LeaderboardClient";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Leaderboard",
+  description: "Top WC 2026 predictors on FootyMarkt. See who's reading the crowd best.",
+  openGraph: {
+    title: "FootyMarkt Leaderboard",
+    description: "Top WC 2026 predictors on FootyMarkt. See who's reading the crowd best.",
+  },
+};
 
 export default async function Leaderboard() {
   const supabase = createClient();
