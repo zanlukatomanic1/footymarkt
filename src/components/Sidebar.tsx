@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import DailySpinWidget from "@/components/DailySpinWidget";
+import CopyEmail from "@/components/CopyEmail";
 
 const NAV = [
   {
@@ -40,20 +42,6 @@ const NAV = [
     ),
   },
   {
-    id: "spin",
-    label: "Daily Spin",
-    href: "/spin",
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 12 20 22 4 22 4 12" />
-        <rect x="2" y="7" width="20" height="5" />
-        <line x1="12" y1="22" x2="12" y2="7" />
-        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-      </svg>
-    ),
-  },
-  {
     id: "account",
     label: "Profile",
     href: "/account",
@@ -85,9 +73,10 @@ type Props = {
   coins: number;
   isAdmin: boolean;
   signedIn: boolean;
+  spinAvailable: boolean;
 };
 
-export default function Sidebar({ username, coins, isAdmin, signedIn }: Props) {
+export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvailable }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -142,6 +131,9 @@ export default function Sidebar({ username, coins, isAdmin, signedIn }: Props) {
         })}
       </nav>
 
+      {/* Daily Spin widget */}
+      <DailySpinWidget spinAvailable={spinAvailable} signedIn={signedIn} />
+
       {/* Bottom section */}
       <div className="border-t border-[#181818] px-[10px] pt-[10px] pb-[14px] mt-2">
         <div className="flex items-center gap-[9px] rounded-[8px] px-[11px] py-[7px] text-[13px] text-[#333] cursor-pointer">
@@ -151,6 +143,7 @@ export default function Sidebar({ username, coins, isAdmin, signedIn }: Props) {
           </svg>
           <span>Settings</span>
         </div>
+        <CopyEmail className="px-[11px] py-[5px]" />
 
         {/* User row */}
         {signedIn ? (

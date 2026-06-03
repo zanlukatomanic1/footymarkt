@@ -1,11 +1,18 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref");
 
   const signIn = async () => {
+    if (ref) {
+      document.cookie = `pending_ref=${encodeURIComponent(ref)}; path=/; max-age=3600; SameSite=Lax`;
+    }
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -30,6 +37,14 @@ export default function LoginPage() {
             WC 2026 · Predict matches · Earn coins
           </p>
 
+          {ref && (
+            <div className="mb-4 rounded-[8px] border border-brand/20 bg-brand/5 px-3 py-2.5">
+              <p className="font-mono text-[11px] text-brand">
+                You were invited — sign up and make 3 predictions to unlock your friend&apos;s bonus.
+              </p>
+            </div>
+          )}
+
           <button
             onClick={signIn}
             className="flex w-full items-center justify-center gap-3 rounded-[8px] bg-white py-[11px] text-[13.5px] font-semibold text-[#1a1a1a] transition-opacity hover:opacity-90"
@@ -49,5 +64,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

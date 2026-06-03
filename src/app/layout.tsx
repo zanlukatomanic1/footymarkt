@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono, Syne } from "next/font/google";
+import { DM_Sans, DM_Mono, Syne, Oswald } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/Sidebar";
@@ -19,6 +19,11 @@ const syne = Syne({
   subsets: ["latin"],
   weight: ["700", "800"],
   variable: "--font-syne",
+});
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-oswald",
 });
 
 export const metadata: Metadata = {
@@ -46,19 +51,26 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   let profile: { username: string | null; coins: number; is_admin: boolean } | null = null;
+  let spinAvailable = false;
   if (user) {
-    const { data } = await supabase
-      .from("users")
-      .select("username, coins, is_admin")
-      .eq("id", user.id)
-      .single();
-    profile = data;
+    const todayUTC = new Date().toISOString().slice(0, 10);
+    const [profileRes, spinRes] = await Promise.all([
+      supabase.from("users").select("username, coins, is_admin").eq("id", user.id).single(),
+      supabase
+        .from("daily_spins")
+        .select("id")
+        .gte("spun_at", `${todayUTC}T00:00:00.000Z`)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    profile = profileRes.data;
+    spinAvailable = !spinRes.data;
   }
 
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${dmMono.variable} ${syne.variable}`}
+      className={`${dmSans.variable} ${dmMono.variable} ${syne.variable} ${oswald.variable}`}
     >
       <body className="bg-page text-ink font-sans md:h-screen md:overflow-hidden">
         <div className="flex md:h-screen">
@@ -68,6 +80,7 @@ export default async function RootLayout({
             coins={profile?.coins ?? 0}
             isAdmin={profile?.is_admin ?? false}
             signedIn={!!user}
+            spinAvailable={spinAvailable}
           />
 
           {/* Content */}
@@ -82,6 +95,7 @@ export default async function RootLayout({
         <MobileNav
           signedIn={!!user}
           isAdmin={profile?.is_admin ?? false}
+          spinAvailable={spinAvailable}
         />
       </body>
     </html>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -20,7 +21,15 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .single();
         if (!profile?.username) {
-          return NextResponse.redirect(`${origin}/username`);
+          // New user — check for a pending referral cookie
+          const cookieStore = cookies();
+          const pendingRef = cookieStore.get("pending_ref")?.value;
+          const refParam = pendingRef ? `?ref=${encodeURIComponent(pendingRef)}` : "";
+
+          // Clear the cookie
+          const response = NextResponse.redirect(`${origin}/username${refParam}`);
+          response.cookies.set("pending_ref", "", { maxAge: 0, path: "/" });
+          return response;
         }
       }
       return NextResponse.redirect(`${origin}${next}`);

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function UsernamePage() {
+function UsernameForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref");
+
   const supabase = createClient();
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
@@ -23,8 +26,26 @@ export default function UsernamePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
+    // Resolve referral code to a user ID (if present)
+    let referredBy: string | null = null;
+    if (refCode) {
+      const { data: referrer } = await supabase
+        .from("users")
+        .select("id")
+        .eq("referral_code", refCode)
+        .neq("id", user.id) // prevent self-referral
+        .single();
+      if (referrer) referredBy = referrer.id;
+    }
+
+    const updatePayload: Record<string, unknown> = { username: clean };
+    if (referredBy) updatePayload.referred_by = referredBy;
+
     const { error } = await supabase
-      .from("users").update({ username: clean }).eq("id", user.id);
+      .from("users")
+      .update(updatePayload)
+      .eq("id", user.id);
+
     if (error) {
       setErr(error.message.includes("unique") ? "Username taken — try another." : error.message);
       setBusy(false);
@@ -40,7 +61,7 @@ export default function UsernamePage() {
         <div className="mb-6 text-center">
           <div className="font-display text-[20px] font-bold text-white">Pick a username</div>
           <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
-            Shown on leaderboards. Can't be changed later.
+            Shown on leaderboards. Can&apos;t be changed later.
           </p>
         </div>
 
@@ -66,5 +87,13 @@ export default function UsernamePage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function UsernamePage() {
+  return (
+    <Suspense>
+      <UsernameForm />
+    </Suspense>
   );
 }

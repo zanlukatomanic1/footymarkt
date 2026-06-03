@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import DailySpinWidget from "@/components/DailySpinWidget";
 
-type Props = { signedIn: boolean; isAdmin: boolean };
+type Props = { signedIn: boolean; isAdmin: boolean; spinAvailable: boolean };
 
 const TABS = [
   {
@@ -40,20 +41,6 @@ const TABS = [
     ),
   },
   {
-    id: "spin",
-    label: "Spin",
-    href: "/spin",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 12 20 22 4 22 4 12" />
-        <rect x="2" y="7" width="20" height="5" />
-        <line x1="12" y1="22" x2="12" y2="7" />
-        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-      </svg>
-    ),
-  },
-  {
     id: "account",
     label: "Profile",
     href: "/account",
@@ -66,28 +53,31 @@ const TABS = [
   },
 ];
 
-export default function MobileNav({ signedIn, isAdmin }: Props) {
+export default function MobileNav({ signedIn, isAdmin, spinAvailable }: Props) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-line bg-sidebar md:hidden">
-      {TABS.map((tab) => {
-        const on = isActive(tab.href);
-        return (
-          <Link
-            key={tab.id}
-            href={tab.href}
-            className="flex flex-1 flex-col items-center gap-1 py-3 text-[10px] transition-colors"
-            style={{ color: on ? "#00ff87" : "#4a4a4a" }}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </Link>
-        );
-      })}
+    <nav className="fixed bottom-0 left-0 right-0 z-30 flex flex-col border-t border-line bg-sidebar md:hidden">
+      <DailySpinWidget spinAvailable={spinAvailable} signedIn={signedIn} compact />
+      <div className="flex">
+        {TABS.map((tab) => {
+          const on = isActive(tab.href);
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              className="flex flex-1 flex-col items-center gap-1 py-3 text-[10px] transition-colors"
+              style={{ color: on ? "#00ff87" : "#4a4a4a" }}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

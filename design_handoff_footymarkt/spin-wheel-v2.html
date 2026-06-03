@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FootyMarkt Daily Spin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Oswald', 'Arial Black', Arial, sans-serif;
+    }
+
+    .wheel-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    canvas { display: block; }
+
+    .spin-btn {
+      position: relative;
+      background: linear-gradient(180deg, #FFD93D 0%, #FF9500 45%, #E07000 100%);
+      border: none;
+      border-radius: 50px;
+      padding: 14px 52px;
+      font-family: 'Oswald', 'Arial Black', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: #fff;
+      letter-spacing: 3px;
+      cursor: pointer;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.45);
+      box-shadow:
+        0 6px 0 #A05000,
+        0 8px 20px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.45);
+      transition: transform 0.1s, box-shadow 0.1s;
+      user-select: none;
+    }
+    .spin-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #A05000, 0 12px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45);
+    }
+    .spin-btn:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #A05000, 0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* Result overlay */
+    .result-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s;
+    }
+    .result-overlay.show { opacity: 1; pointer-events: all; }
+
+    .result-card {
+      background: linear-gradient(160deg, #7B3A10, #A0521C 50%, #7B3A10);
+      border: 4px solid #FFD700;
+      border-radius: 22px;
+      padding: 48px 64px 36px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(255,180,0,0.35), 0 20px 60px rgba(0,0,0,0.6);
+      transform: scale(0.85);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .result-overlay.show .result-card { transform: scale(1); }
+
+    .result-label {
+      color: #FFD700;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .result-pts {
+      color: #fff;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-size: 88px;
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    .result-unit {
+      color: #FFD700;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 4px;
+      margin-top: 4px;
+      margin-bottom: 28px;
+    }
+    .result-close {
+      background: linear-gradient(180deg, #FFD93D, #FF9500);
+      border: none; border-radius: 50px;
+      padding: 12px 36px;
+      font-family: 'Oswald', Arial, sans-serif;
+      font-size: 18px; font-weight: 700;
+      letter-spacing: 2px; color: #5A2800;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #A05000, 0 6px 16px rgba(0,0,0,0.3);
+      transition: transform 0.1s;
+    }
+    .result-close:hover { transform: translateY(-1px); }
+    .result-close:active { transform: translateY(2px); }
+  </style>
+</head>
+<body>
+
+<div class="wheel-wrap">
+  <canvas id="wheel" width="520" height="520"></canvas>
+  <button class="spin-btn" id="spinBtn">SPIN</button>
+</div>
+
+<div class="result-overlay" id="overlay">
+  <div class="result-card">
+    <div class="result-label">🎉 You Won!</div>
+    <div class="result-pts" id="resultPts">500</div>
+    <div class="result-unit">POINTS</div>
+    <button class="result-close" onclick="closeResult()">CLAIM REWARD</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('wheel');
+const ctx    = canvas.getContext('2d');
+const S      = 520;
+const cx     = S / 2, cy = S / 2;
+canvas.width  = S;
+canvas.height = S;
+
+/* ── Geometry ─────────────────────────────────────── */
+const OUTER_R  = 248;   // outer wood ring edge
+const INNER_R  = 196;   // inner wood ring / segment outer edge
+const HUB_R    = 50;    // center hub
+const BULB_POS = OUTER_R - 21;  // bulb centres radially
+const BULB_SZ  = 9.5;
+const N_BULBS  = 18;
+
+/* ── Segments (7) ─────────────────────────────────── */
+const SEGS = [
+  { label: '500',  fill: '#1A8F3E', text: '#fff'    },
+  { label: '100',  fill: '#F4F4F4', text: '#166830' },
+  { label: '200',  fill: '#1A8F3E', text: '#fff'    },
+  { label: '50',   fill: '#F4F4F4', text: '#166830' },
+  { label: '300',  fill: '#1A8F3E', text: '#fff'    },
+  { label: '100',  fill: '#F4F4F4', text: '#166830' },
+  { label: '50',   fill: '#1A8F3E', text: '#fff'    },
+  { label: '100',  fill: '#F4F4F4', text: '#166830' },
+];
+
+const N     = SEGS.length;
+const SLICE = (2 * Math.PI) / N;
+
+/* ── State ────────────────────────────────────────── */
+let angle        = 0;
+let spinning     = false;
+let bulbTick     = 0;
+let lastBulbTime = 0;
+
+/* ══════════════════════════════════════════════════
+   DRAW helpers
+══════════════════════════════════════════════════ */
+
+function drawWoodRing() {
+  /* black ring fill */
+  const rg = ctx.createRadialGradient(cx - 50, cy - 50, 10, cx, cy, OUTER_R * 1.05);
+  rg.addColorStop(0.00, '#3a3a3a');
+  rg.addColorStop(0.30, '#1c1c1c');
+  rg.addColorStop(0.65, '#0e0e0e');
+  rg.addColorStop(1.00, '#050505');
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
+  ctx.fillStyle = rg;
+  ctx.fill();
+
+  /* subtle top-left sheen */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2); ctx.clip();
+  const hl = ctx.createRadialGradient(cx - 80, cy - 80, 0, cx - 20, cy - 20, OUTER_R * 0.65);
+  hl.addColorStop(0, 'rgba(255,255,255,0.10)');
+  hl.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
+  ctx.fillStyle = hl; ctx.fill();
+  ctx.restore();
+
+  /* outer border */
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 7; ctx.stroke();
+
+  /* green accent ring just inside outer edge */
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R - 6, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(26,143,62,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  /* inner border */
+  ctx.beginPath(); ctx.arc(cx, cy, INNER_R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 2.5; ctx.stroke();
+}
+
+function drawSegments() {
+  /* clip to inner circle */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, INNER_R - 1, 0, Math.PI * 2); ctx.clip();
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  for (let i = 0; i < N; i++) {
+    const sa   = -Math.PI / 2 + i * SLICE;
+    const ea   = sa + SLICE;
+    const mid  = sa + SLICE / 2;
+
+    /* segment fill */
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, INNER_R, sa, ea);
+    ctx.closePath();
+    ctx.fillStyle = SEGS[i].fill;
+    ctx.fill();
+
+    /* edge line */
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, INNER_R, sa, ea);
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    /* shimmer on light segments */
+    if (SEGS[i].fill !== '#1A8F3E') {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, INNER_R, sa, ea);
+      ctx.closePath();
+      ctx.clip();
+      const sg = ctx.createRadialGradient(-INNER_R * 0.3, -INNER_R * 0.3, 0, 0, 0, INNER_R);
+      sg.addColorStop(0, 'rgba(255,255,255,0.22)');
+      sg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sg; ctx.fill();
+      ctx.restore();
+    }
+
+    /* text */
+    const tr = INNER_R * 0.62;
+    ctx.save();
+    ctx.translate(tr * Math.cos(mid), tr * Math.sin(mid));
+    ctx.rotate(mid + Math.PI / 2);
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fs = Math.max(22, Math.floor(INNER_R * 0.148));
+    ctx.font = `700 ${fs}px 'Oswald', 'Arial Black', Arial, sans-serif`;
+
+    /* text shadow */
+    ctx.shadowColor   = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur    = 4;
+    ctx.shadowOffsetX = 1.5;
+    ctx.shadowOffsetY = 1.5;
+    ctx.fillStyle = SEGS[i].text;
+    ctx.fillText(SEGS[i].label, 0, 0);
+    ctx.shadowColor = 'transparent';
+    ctx.restore();
+  }
+
+  ctx.restore(); /* undo translate+rotate */
+  ctx.restore(); /* undo clip */
+}
+
+function drawHub() {
+  /* black hub fill */
+  const hg = ctx.createRadialGradient(cx - 16, cy - 16, 4, cx, cy, HUB_R);
+  hg.addColorStop(0.00, '#3a3a3a');
+  hg.addColorStop(0.40, '#1a1a1a');
+  hg.addColorStop(1.00, '#080808');
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
+  ctx.fillStyle = hg; ctx.fill();
+
+  /* hub highlight */
+  const hhl = ctx.createRadialGradient(cx - 14, cy - 14, 0, cx, cy, HUB_R);
+  hhl.addColorStop(0, 'rgba(255,255,255,0.12)');
+  hhl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+  hhl.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
+  ctx.fillStyle = hhl; ctx.fill();
+
+  /* green accent border */
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
+  ctx.strokeStyle = '#1A8F3E'; ctx.lineWidth = 3; ctx.stroke();
+
+  /* inner decorative ring */
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R - 11, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(26,143,62,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+function drawBulbs(now) {
+  for (let i = 0; i < N_BULBS; i++) {
+    const a  = (i / N_BULBS) * Math.PI * 2 - Math.PI / 2;
+    const bx = cx + BULB_POS * Math.cos(a);
+    const by = cy + BULB_POS * Math.sin(a);
+
+    /* brightness: alternate two groups while spinning */
+    let bright = 1.0;
+    if (spinning) {
+      bright = (i % 2 === bulbTick % 2) ? 1.0 : 0.35;
+    }
+
+    /* outer glow — green tint */
+    const gw = ctx.createRadialGradient(bx, by, 0, bx, by, BULB_SZ * 2.8);
+    gw.addColorStop(0, `rgba(150,255,180,${0.55 * bright})`);
+    gw.addColorStop(0.5, `rgba(26,143,62,${0.22 * bright})`);
+    gw.addColorStop(1, 'rgba(26,143,62,0)');
+    ctx.beginPath(); ctx.arc(bx, by, BULB_SZ * 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = gw; ctx.fill();
+
+    /* bulb body */
+    const bg = ctx.createRadialGradient(bx - 3.5, by - 3.5, 1.5, bx, by, BULB_SZ);
+    bg.addColorStop(0.00, `rgba(220,255,230,${0.92 * bright + 0.04})`);
+    bg.addColorStop(0.35, `rgba(${Math.round(60 * bright + 80)},${Math.round(200 * bright + 30)},${Math.round(100 * bright)},1)`);
+    bg.addColorStop(0.80, `rgba(${Math.round(10 * bright + 10)},${Math.round(120 * bright + 10)},${Math.round(40 * bright)},1)`);
+    bg.addColorStop(1.00, `rgba(0,${Math.round(70 * bright)},${Math.round(20 * bright)},1)`);
+
+    ctx.beginPath(); ctx.arc(bx, by, BULB_SZ, 0, Math.PI * 2);
+    ctx.fillStyle = bg; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(bx, by, BULB_SZ, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,60,20,${0.75 * bright + 0.15})`;
+    ctx.lineWidth = 1; ctx.stroke();
+  }
+}
+
+function drawPointer() {
+  const tipY  = cy - INNER_R + 6;
+  const baseY = cy - OUTER_R + 18;
+  const hw    = 15;
+
+  ctx.save();
+  ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur    = 8;
+  ctx.shadowOffsetY = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, tipY);
+  ctx.lineTo(cx - hw, baseY);
+  ctx.lineTo(cx + hw, baseY);
+  ctx.closePath();
+
+  const pg = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0);
+  pg.addColorStop(0,   '#17a83a');
+  pg.addColorStop(0.5, '#2ecc60');
+  pg.addColorStop(1,   '#17a83a');
+  ctx.fillStyle = pg; ctx.fill();
+
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════════════
+   MAIN DRAW
+══════════════════════════════════════════════════ */
+function draw(now) {
+  ctx.clearRect(0, 0, S, S);
+
+  if (spinning && now && now - lastBulbTime > 140) {
+    bulbTick++;
+    lastBulbTime = now;
+  }
+
+  drawWoodRing();
+  drawSegments();
+  drawHub();
+  drawBulbs(now);
+  drawPointer();
+}
+
+/* ══════════════════════════════════════════════════
+   SPIN LOGIC
+══════════════════════════════════════════════════ */
+function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+function getWinnerIndex() {
+  const norm = ((-(angle % (Math.PI * 2))) + Math.PI * 200) % (Math.PI * 2);
+  return Math.floor(norm / SLICE) % N;
+}
+
+let startAngle  = 0;
+let deltaAngle  = 0;
+let startTime   = 0;
+let duration    = 0;
+
+function animateFrame(now) {
+  const elapsed = now - startTime;
+  const t       = Math.min(elapsed / duration, 1);
+  angle         = startAngle + deltaAngle * easeOutQuart(t);
+
+  draw(now);
+
+  if (t < 1) {
+    requestAnimationFrame(animateFrame);
+  } else {
+    angle    = startAngle + deltaAngle;
+    spinning = false;
+    bulbTick = 0;
+    draw();
+
+    const winner = SEGS[getWinnerIndex()];
+    document.getElementById('spinBtn').disabled = false;
+
+    setTimeout(() => {
+      document.getElementById('resultPts').textContent = winner.label;
+      document.getElementById('overlay').classList.add('show');
+    }, 350);
+  }
+}
+
+function spin() {
+  if (spinning) return;
+  spinning  = true;
+  bulbTick  = 0;
+  lastBulbTime = performance.now();
+
+  document.getElementById('spinBtn').disabled = true;
+
+  const rotations  = 6 + Math.random() * 4;        // 6–10 full spins
+  const extraAngle = Math.random() * Math.PI * 2;
+
+  startAngle  = angle;
+  deltaAngle  = rotations * Math.PI * 2 + extraAngle;
+  duration    = 4800 + Math.random() * 1800;         // 4.8–6.6 s
+  startTime   = performance.now();
+
+  requestAnimationFrame(animateFrame);
+}
+
+function closeResult() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+document.getElementById('spinBtn').addEventListener('click', spin);
+
+/* click hub to spin */
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const dx   = e.clientX - rect.left  - cx;
+  const dy   = e.clientY - rect.top   - cy;
+  if (Math.sqrt(dx * dx + dy * dy) <= HUB_R) spin();
+});
+
+/* initial render */
+draw();
+</script>
+</body>
+</html>

@@ -18,10 +18,16 @@ export default async function SpinPage() {
     p_user_id: user.id,
   });
 
+  const nextMidnightUTC = new Date();
+  nextMidnightUTC.setUTCHours(24, 0, 0, 0);
+
   return (
     <div>
       <TopBar title="Daily Spin" subtitle="Free coins, once a day" />
-      <SpinWheel initialHasSpun={hasSpun ?? false} />
+      <SpinWheel
+        initialHasSpun={hasSpun ?? false}
+        nextSpinAt={nextMidnightUTC.toISOString()}
+      />
     </div>
   );
 }

@@ -38,9 +38,9 @@ Three wrappers in `src/lib/supabase/`:
 - `middleware.ts` — session refresh in `middleware.ts` at root
 
 ### Layout & navigation
-- `src/app/layout.tsx` fetches the user profile once and passes `username`, `coins`, `is_admin`, `signedIn` as props to `<Sidebar>` and `<MobileNav>`.
-- Desktop: 220px fixed `<Sidebar>` (Client Component, uses `usePathname` for active state).
-- Mobile: sidebar hidden, `<MobileNav>` fixed bottom tab bar.
+- `src/app/layout.tsx` fetches the user profile and spin availability once and passes `username`, `coins`, `is_admin`, `signedIn`, `spinAvailable` as props to `<Sidebar>` and `<MobileNav>`. Spin availability is checked by querying `daily_spins` directly with the regular (RLS-scoped) client — do **not** use `createAdminClient` in the root layout.
+- Desktop: 220px fixed `<Sidebar>` (Client Component, uses `usePathname` for active state). Shows a pulsing green dot badge on the Daily Spin nav item when `spinAvailable` is true.
+- Mobile: sidebar hidden, `<MobileNav>` fixed bottom tab bar. Same pulsing badge on the Spin tab.
 - Each page renders its own `<TopBar title subtitle />` (Server Component, fetches coins independently) as the first element inside the page content — not in the layout.
 
 ### Server vs Client component split
@@ -75,11 +75,18 @@ matches        — id, home_team, away_team, kickoff_at, result (enum home/draw/
 predictions    — id, user_id, match_id, prediction, coins_earned, was_correct, unique(user_id, match_id)
 leagues        — id, name, invite_code (unique), created_by
 league_members — league_id, user_id (composite PK)
+daily_spins    — id, user_id, coins_won, spun_at (timestamptz). One row per spin; reset is UTC-day based.
 
 match_sentiment (VIEW) — match_id, home_count, draw_count, away_count, total_count
 ```
 
-RLS: predictions can only be inserted/updated by the owning user AND only while `kickoff_at > now()` AND `result IS NULL`.
+RLS: predictions can only be inserted/updated by the owning user AND only while `kickoff_at > now()` AND `result IS NULL`. `daily_spins` is readable by the owning user (SELECT policy).
+
+### Daily Spin (`/spin`)
+- One spin per UTC calendar day; resets at midnight UTC.
+- `src/app/spin/page.tsx` — Server Component; checks `has_spun_today` RPC, computes `nextSpinAt` (next UTC midnight ISO string), passes both to `<SpinWheel>`.
+- `src/components/SpinWheel.tsx` — Client Component; runs a `useCountdown` hook that ticks every second; shows a live `HH:MM:SS` countdown to the next spin after the user has spun. `POST /api/spin` calls the `claim_daily_spin` Postgres function.
+- Segments (7): 50 × 2, 100 × 2, 200, 300, 500 coins — weighted equally at 1/7 each.
 
 ## Design Tokens (Tailwind)
 
