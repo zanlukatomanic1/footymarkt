@@ -1,45 +1,186 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-// ─── Wheel config v2 ─────────────────────────────────────────────────────────
-const SEG_COUNT = 7;
-const SEG_ANGLE = 360 / SEG_COUNT;
-const R   = 118;   // segment outer radius
-const OR  = 127;   // outer decorative ring radius
-const CX  = 140;
-const CY  = 140;
-const W   = 280;   // svg / container size
+/* ── Canvas geometry ───────────────────────────────────── */
+const S = 520;
+const cx = S / 2;
+const cy = S / 2;
+const OUTER_R = 248;
+const INNER_R = 196;
+const HUB_R   = 50;
+const BULB_POS = OUTER_R - 21;
+const BULB_SZ  = 9.5;
+const N_BULBS  = 18;
 
-const SEGMENTS = [
-  { coins: 50,  bg: "#152e17", border: "#00ff8740", color: "#00ff87" },
-  { coins: 100, bg: "#101e38", border: "#4d7cff40", color: "#4d7cff" },
-  { coins: 200, bg: "#0d2626", border: "#00e5ff40", color: "#00e5ff" },
-  { coins: 50,  bg: "#152e17", border: "#00ff8740", color: "#00ff87" },
-  { coins: 300, bg: "#1e1030", border: "#b44dff40", color: "#b44dff" },
-  { coins: 100, bg: "#101e38", border: "#4d7cff40", color: "#4d7cff" },
-  { coins: 500, bg: "#251e00", border: "#ffd70050", color: "#ffd700" },
+const SEGS = [
+  { label: "500", points: 500, fill: "#1A8F3E", text: "#fff" },
+  { label: "100", points: 100, fill: "#F4F4F4", text: "#166830" },
+  { label: "200", points: 200, fill: "#1A8F3E", text: "#fff" },
+  { label: "50",  points: 50,  fill: "#F4F4F4", text: "#166830" },
+  { label: "300", points: 300, fill: "#1A8F3E", text: "#fff" },
+  { label: "100", points: 100, fill: "#F4F4F4", text: "#166830" },
+  { label: "50",  points: 50,  fill: "#1A8F3E", text: "#fff" },
+  { label: "100", points: 100, fill: "#F4F4F4", text: "#166830" },
 ] as const;
 
-function pol(r: number, deg: number) {
-  const rad = ((deg - 90) * Math.PI) / 180;
-  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+const N     = SEGS.length;
+const SLICE = (2 * Math.PI) / N;
+const OSWALD = "'Oswald', 'Arial Black', Arial, sans-serif";
+
+/* ── Easing ────────────────────────────────────────────── */
+function easeOutQuart(t: number) {
+  return 1 - Math.pow(1 - t, 4);
 }
 
-function segPath(i: number) {
-  const s = pol(R, i * SEG_ANGLE);
-  const e = pol(R, (i + 1) * SEG_ANGLE);
-  return `M ${CX} ${CY} L ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${R} ${R} 0 0 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)} Z`;
+/* ── Winner index from angle ───────────────────────────── */
+// function getWinnerIndex(angle: number): number {
+//   const norm = ((-(angle % (Math.PI * 2))) + Math.PI * 200) % (Math.PI * 2);
+//   return Math.floor(norm / SLICE) % N;
+// }
+
+function getWinnerIndex(angle: number): number {
+  const normalized =
+    (((-angle + Math.PI / 2) % (Math.PI * 2)) + Math.PI * 2) %
+    (Math.PI * 2);
+
+  return Math.floor(normalized / SLICE) % N;
 }
 
-function getNextMidnightUTC() {
-  const d = new Date();
-  d.setUTCHours(24, 0, 0, 0);
-  return d.toISOString();
+// keep getWinnerIndex used (referenced in future if needed)
+void getWinnerIndex;
+
+/* ── Draw functions ────────────────────────────────────── */
+function drawWoodRing(ctx: CanvasRenderingContext2D) {
+  const rg = ctx.createRadialGradient(cx - 50, cy - 50, 10, cx, cy, OUTER_R * 1.05);
+  rg.addColorStop(0.00, "#3a3a3a");
+  rg.addColorStop(0.30, "#1c1c1c");
+  rg.addColorStop(0.65, "#0e0e0e");
+  rg.addColorStop(1.00, "#050505");
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
+  ctx.fillStyle = rg; ctx.fill();
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2); ctx.clip();
+  const hl = ctx.createRadialGradient(cx - 80, cy - 80, 0, cx - 20, cy - 20, OUTER_R * 0.65);
+  hl.addColorStop(0, "rgba(255,255,255,0.10)");
+  hl.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
+  ctx.fillStyle = hl; ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
+  ctx.strokeStyle = "#000"; ctx.lineWidth = 7; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R - 6, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(26,143,62,0.55)"; ctx.lineWidth = 1.5; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(cx, cy, INNER_R, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.lineWidth = 2.5; ctx.stroke();
 }
 
-// ─── Countdown hook ───────────────────────────────────────────────────────────
+function drawSegments(ctx: CanvasRenderingContext2D, angle: number) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, INNER_R - 1, 0, Math.PI * 2); ctx.clip();
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  for (let i = 0; i < N; i++) {
+    const sa  = -Math.PI / 2 + i * SLICE;
+    const ea  = sa + SLICE;
+    const mid = sa + SLICE / 2;
+
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, INNER_R, sa, ea); ctx.closePath();
+    ctx.fillStyle = SEGS[i].fill; ctx.fill();
+
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, INNER_R, sa, ea); ctx.closePath();
+    ctx.strokeStyle = "rgba(0,0,0,0.22)"; ctx.lineWidth = 2; ctx.stroke();
+
+    if (SEGS[i].fill !== "#1A8F3E") {
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, INNER_R, sa, ea); ctx.closePath(); ctx.clip();
+      const sg = ctx.createRadialGradient(-INNER_R * 0.3, -INNER_R * 0.3, 0, 0, 0, INNER_R);
+      sg.addColorStop(0, "rgba(255,255,255,0.22)");
+      sg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = sg; ctx.fill();
+      ctx.restore();
+    }
+
+    const tr = INNER_R * 0.62;
+    ctx.save();
+    ctx.translate(tr * Math.cos(mid), tr * Math.sin(mid));
+    ctx.rotate(mid + Math.PI / 2);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `700 ${Math.max(22, Math.floor(INNER_R * 0.148))}px ${OSWALD}`;
+    ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1.5; ctx.shadowOffsetY = 1.5;
+    ctx.fillStyle = SEGS[i].text;
+    ctx.fillText(SEGS[i].label, 0, 0);
+    ctx.shadowColor = "transparent";
+    ctx.restore();
+  }
+
+  ctx.restore(); ctx.restore();
+}
+
+function drawHub(ctx: CanvasRenderingContext2D) {
+  const hg = ctx.createRadialGradient(cx - 16, cy - 16, 4, cx, cy, HUB_R);
+  hg.addColorStop(0.00, "#3a3a3a"); hg.addColorStop(0.40, "#1a1a1a"); hg.addColorStop(1.00, "#080808");
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2); ctx.fillStyle = hg; ctx.fill();
+
+  const hhl = ctx.createRadialGradient(cx - 14, cy - 14, 0, cx, cy, HUB_R);
+  hhl.addColorStop(0, "rgba(255,255,255,0.12)"); hhl.addColorStop(0.5, "rgba(255,255,255,0.03)"); hhl.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2); ctx.fillStyle = hhl; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
+  ctx.strokeStyle = "#1A8F3E"; ctx.lineWidth = 3; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R - 11, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(26,143,62,0.25)"; ctx.lineWidth = 1.5; ctx.stroke();
+}
+
+function drawBulbs(ctx: CanvasRenderingContext2D, spinning: boolean, bulbTick: number) {
+  for (let i = 0; i < N_BULBS; i++) {
+    const a   = (i / N_BULBS) * Math.PI * 2 - Math.PI / 2;
+    const bx  = cx + BULB_POS * Math.cos(a);
+    const by  = cy + BULB_POS * Math.sin(a);
+    const bright = spinning ? ((i % 2 === bulbTick % 2) ? 1.0 : 0.35) : 1.0;
+
+    const gw = ctx.createRadialGradient(bx, by, 0, bx, by, BULB_SZ * 2.8);
+    gw.addColorStop(0, `rgba(150,255,180,${0.55 * bright})`);
+    gw.addColorStop(0.5, `rgba(26,143,62,${0.22 * bright})`);
+    gw.addColorStop(1, "rgba(26,143,62,0)");
+    ctx.beginPath(); ctx.arc(bx, by, BULB_SZ * 2.8, 0, Math.PI * 2); ctx.fillStyle = gw; ctx.fill();
+
+    const bg = ctx.createRadialGradient(bx - 3.5, by - 3.5, 1.5, bx, by, BULB_SZ);
+    bg.addColorStop(0.00, `rgba(220,255,230,${0.92 * bright + 0.04})`);
+    bg.addColorStop(0.35, `rgba(${Math.round(60 * bright + 80)},${Math.round(200 * bright + 30)},${Math.round(100 * bright)},1)`);
+    bg.addColorStop(0.80, `rgba(${Math.round(10 * bright + 10)},${Math.round(120 * bright + 10)},${Math.round(40 * bright)},1)`);
+    bg.addColorStop(1.00, `rgba(0,${Math.round(70 * bright)},${Math.round(20 * bright)},1)`);
+    ctx.beginPath(); ctx.arc(bx, by, BULB_SZ, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
+
+    ctx.beginPath(); ctx.arc(bx, by, BULB_SZ, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,60,20,${0.75 * bright + 0.15})`; ctx.lineWidth = 1; ctx.stroke();
+  }
+}
+
+function drawPointer(ctx: CanvasRenderingContext2D) {
+  const tipY  = cy - INNER_R + 6;
+  const baseY = cy - OUTER_R + 18;
+  const hw    = 15;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+  ctx.beginPath(); ctx.moveTo(cx, tipY); ctx.lineTo(cx - hw, baseY); ctx.lineTo(cx + hw, baseY); ctx.closePath();
+  const pg = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0);
+  pg.addColorStop(0, "#17a83a"); pg.addColorStop(0.5, "#2ecc60"); pg.addColorStop(1, "#17a83a");
+  ctx.fillStyle = pg; ctx.fill();
+  ctx.shadowColor = "transparent"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.restore();
+}
+
+/* ── Countdown ─────────────────────────────────────────── */
 function useCountdown(target: string, active: boolean) {
   const [timeLeft, setTimeLeft] = useState("");
   useEffect(() => {
@@ -60,65 +201,183 @@ function useCountdown(target: string, active: boolean) {
   return timeLeft;
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+function getNextMidnightUTC() {
+  const d = new Date();
+  d.setUTCHours(24, 0, 0, 0);
+  return d.toISOString();
+}
+
+/* ── Types ─────────────────────────────────────────────── */
 type Props = {
   spinAvailable: boolean;
   signedIn: boolean;
   compact?: boolean;
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
+/* ── Component ─────────────────────────────────────────── */
 export default function DailySpinWidget({ spinAvailable, signedIn, compact = false }: Props) {
   const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [hasSpun, setHasSpun] = useState(!spinAvailable);
-  const [rotation, setRotation] = useState(0);
-  const [spinning, setSpinning] = useState(false);
-  const [result, setResult] = useState<number | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+
+  const [modalOpen,  setModalOpen]  = useState(false);
+  const [hasSpun,    setHasSpun]    = useState(!spinAvailable);
+  const [spinning,   setSpinning]   = useState(false);
+  const [result,     setResult]     = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [err,        setErr]        = useState<string | null>(null);
+
+  const canvasRef       = useRef<HTMLCanvasElement>(null);
+  const angleRef        = useRef(0);
+  const spinningRef     = useRef(false);
+  const bulbTickRef     = useRef(0);
+  const lastBulbTimeRef = useRef(0);
+  const rafRef          = useRef<number>(0);
 
   const nextSpinAt = getNextMidnightUTC();
-  const countdown = useCountdown(nextSpinAt, hasSpun);
-  const resultSeg = SEGMENTS.find((s) => s.coins === result);
+  const countdown  = useCountdown(nextSpinAt, hasSpun);
 
-  async function spin() {
+  /* ── Draw frame ─────────────────────────────────────── */
+  function drawFrame(now?: number) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    if (spinningRef.current && now != null && now - lastBulbTimeRef.current > 140) {
+      bulbTickRef.current++;
+      lastBulbTimeRef.current = now;
+    }
+
+    ctx.clearRect(0, 0, S, S);
+    drawWoodRing(ctx);
+    drawSegments(ctx, angleRef.current);
+    drawHub(ctx);
+    drawBulbs(ctx, spinningRef.current, bulbTickRef.current);
+    drawPointer(ctx);
+  }
+
+  /* Initial draw when modal opens */
+  useEffect(() => {
+    if (modalOpen) {
+      document.fonts.ready.then(() => drawFrame());
+    } else {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen]);
+
+  useEffect(() => {
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  /* ── Spin logic ─────────────────────────────────────── */
+  async function handleSpin() {
     if (spinning || hasSpun) return;
     setSpinning(true);
     setErr(null);
+    spinningRef.current  = true;
+    bulbTickRef.current  = 0;
+    lastBulbTimeRef.current = performance.now();
+
+    let coinsWon: number;
     try {
-      const res = await fetch("/api/spin", { method: "POST" });
+      const res  = await fetch("/api/spin", { method: "POST" });
       const json = await res.json();
       if (!res.ok) {
         setErr(json.error === "already_spun_today" ? "Already spun today!" : "Something went wrong.");
         setSpinning(false);
+        spinningRef.current = false;
+        drawFrame();
         return;
       }
-      const coinsWon: number = json.coinsWon;
-      const matches = SEGMENTS.reduce<number[]>((acc, s, i) => {
-        if (s.coins === coinsWon) acc.push(i);
-        return acc;
-      }, []);
-      const segIdx = matches[Math.floor(Math.random() * matches.length)] ?? 0;
-      const jitter = (Math.random() - 0.5) * 0.35;
-      const segCenter = (segIdx + 0.5 + jitter) * SEG_ANGLE;
-      setRotation((prev) => prev + (360 - segCenter) + 6 * 360);
-      setTimeout(() => {
-        setSpinning(false);
-        setHasSpun(true);
-        setResult(coinsWon);
-        router.refresh();
-      }, 4200);
+      coinsWon = json.coinsWon;
     } catch {
-      setErr("Network error.");
+      setErr("Network error. Try again.");
       setSpinning(false);
+      spinningRef.current = false;
+      drawFrame();
+      return;
     }
+
+    /* Find matching segment index */
+    const matches = SEGS.reduce<number[]>((acc, s, i) => {
+      if (s.points === coinsWon) acc.push(i);
+      return acc;
+    }, []);
+    const winIdx = matches[Math.floor(Math.random() * matches.length)] ?? 0;
+
+
+    /* Compute target angle.
+       We want the wheel rotated so that segment winIdx's midpoint sits
+       exactly at the 12-o'clock pointer.
+       Segment midpoint local angle = -π/2 + (winIdx + 0.5) * SLICE.
+       After rotation by finalAngle: screen_angle = local_mid + finalAngle.
+       We want screen_angle = -π/2  (top)  →  finalAngle ≡ -(winIdx + 0.5)*SLICE  (mod 2π) */
+    // const segMidOffset = (winIdx + 0.5) * SLICE;
+    // const targetMod    = ((2 * Math.PI - segMidOffset) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+
+    const segMidOffset = winIdx * SLICE;
+    const targetMod =
+      ((2 * Math.PI - segMidOffset) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    const currentMod   = ((angleRef.current  % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+    // console.log("coinsWon", coinsWon);
+    // console.log("winIdx", winIdx);
+    // console.log("target segment", SEGS[winIdx]);
+    // console.log("targetMod", targetMod);
+
+    const needed       = (targetMod - currentMod + 2 * Math.PI) % (2 * Math.PI);
+    const rotations    = 6 + Math.random() * 4;
+    const deltaAngle   = rotations * 2 * Math.PI + needed;
+    const duration        = 4800 + Math.random() * 1800;
+    const startAngle      = angleRef.current;
+    const startTime       = performance.now();
+
+    function animateFrame(now: number) {
+      const t = Math.min((now - startTime) / duration, 1);
+      angleRef.current = startAngle + deltaAngle * easeOutQuart(t);
+      drawFrame(now);
+
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(animateFrame);
+      } else {
+        angleRef.current = startAngle + deltaAngle;
+
+        // console.log(
+        //   "final winner",
+        //   getWinnerIndex(angleRef.current),
+        //   SEGS[getWinnerIndex(angleRef.current)]
+        // );
+
+
+        spinningRef.current = false;
+        bulbTickRef.current = 0;
+        drawFrame();
+
+        setTimeout(() => {
+          setResult(coinsWon);
+          setShowResult(true);
+          setHasSpun(true);
+          setSpinning(false);
+          router.refresh();
+        }, 350);
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(animateFrame);
   }
 
   function openModal() {
-    if (signedIn && !hasSpun) setModalOpen(true);
+    if (!signedIn) return;
+    setModalOpen(true);
   }
 
-  // ─── Compact (mobile bar) ────────────────────────────────────────────────
+  function closeModal() {
+    if (spinning) return;
+    setModalOpen(false);
+    setShowResult(false);
+  }
+
+  /* ── Compact strip (mobile) ─────────────────────────── */
   if (compact) {
     if (!signedIn) return null;
     return (
@@ -158,20 +417,21 @@ export default function DailySpinWidget({ spinAvailable, signedIn, compact = fal
         <SpinModal
           open={modalOpen}
           spinning={spinning}
-          rotation={rotation}
-          result={result}
-          resultSeg={resultSeg}
           hasSpun={hasSpun}
+          result={result}
+          showResult={showResult}
           countdown={countdown}
           err={err}
-          onClose={() => !spinning && setModalOpen(false)}
-          onSpin={spin}
+          canvasRef={canvasRef}
+          onClose={closeModal}
+          onSpin={handleSpin}
+          onClaimResult={() => setShowResult(false)}
         />
       </>
     );
   }
 
-  // ─── Sidebar card ────────────────────────────────────────────────────────
+  /* ── Sidebar card ───────────────────────────────────── */
   return (
     <>
       <div className="mx-[10px] mb-[6px] rounded-[10px] border border-[#181818] bg-[#0c0c0c] px-[12px] py-[10px]">
@@ -182,9 +442,16 @@ export default function DailySpinWidget({ spinAvailable, signedIn, compact = fal
             alt=""
             width={11}
             height={11}
-            style={{ filter: signedIn && !hasSpun ? "brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(400%) hue-rotate(100deg)" : "brightness(0) saturate(100%) invert(20%)" }}
+            style={{
+              filter: signedIn && !hasSpun
+                ? "brightness(0) saturate(100%) invert(62%) sepia(85%) saturate(400%) hue-rotate(100deg)"
+                : "brightness(0) saturate(100%) invert(20%)",
+            }}
           />
-          <span className="font-mono text-[9.5px] uppercase tracking-widest" style={{ color: signedIn && !hasSpun ? "#00ff87" : "#2e2e2e" }}>
+          <span
+            className="font-mono text-[9.5px] uppercase tracking-widest"
+            style={{ color: signedIn && !hasSpun ? "#00ff87" : "#2e2e2e" }}
+          >
             Daily Spin
           </span>
           {!signedIn && (
@@ -219,36 +486,39 @@ export default function DailySpinWidget({ spinAvailable, signedIn, compact = fal
       <SpinModal
         open={modalOpen}
         spinning={spinning}
-        rotation={rotation}
-        result={result}
-        resultSeg={resultSeg}
         hasSpun={hasSpun}
+        result={result}
+        showResult={showResult}
         countdown={countdown}
         err={err}
-        onClose={() => !spinning && setModalOpen(false)}
-        onSpin={spin}
+        canvasRef={canvasRef}
+        onClose={closeModal}
+        onSpin={handleSpin}
+        onClaimResult={() => setShowResult(false)}
       />
     </>
   );
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
-type SegType = (typeof SEGMENTS)[number];
-
-function SpinModal({
-  open, spinning, rotation, result, resultSeg, hasSpun, countdown, err, onClose, onSpin,
-}: {
+/* ── Modal ─────────────────────────────────────────────── */
+type ModalProps = {
   open: boolean;
   spinning: boolean;
-  rotation: number;
-  result: number | null;
-  resultSeg: SegType | undefined;
   hasSpun: boolean;
+  result: number | null;
+  showResult: boolean;
   countdown: string;
   err: string | null;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
   onClose: () => void;
   onSpin: () => void;
-}) {
+  onClaimResult: () => void;
+};
+
+function SpinModal({
+  open, spinning, hasSpun, result, showResult, countdown, err,
+  canvasRef, onClose, onSpin, onClaimResult,
+}: ModalProps) {
   if (!open) return null;
 
   return (
@@ -258,10 +528,10 @@ function SpinModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative w-full max-w-[380px] rounded-[22px] border border-line bg-card p-6 pb-8"
+        className="relative w-full max-w-[480px] rounded-[22px] border border-line bg-card p-5 pb-7"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close */}
+        {/* Close button */}
         {!spinning && (
           <button
             onClick={onClose}
@@ -273,137 +543,104 @@ function SpinModal({
           </button>
         )}
 
-        <p className="mb-5 text-center font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+        <p className="mb-4 text-center font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           Daily Spin · Free coins
         </p>
 
-        {/* ── Wheel v2 ── */}
-        <div className="relative mx-auto select-none" style={{ width: W }}>
+        {/* Canvas + result overlay */}
+        <div style={{ position: "relative" }}>
+          <canvas
+            ref={canvasRef}
+            width={S}
+            height={S}
+            style={{ width: "100%", height: "auto", display: "block", cursor: (!hasSpun && !spinning) ? "pointer" : "default" }}
+            onClick={() => { if (!hasSpun && !spinning) onSpin(); }}
+          />
 
-          {/* Pointer */}
-          <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ top: -14 }}>
-            <svg width="22" height="26" viewBox="0 0 22 26">
-              <defs>
-                <linearGradient id="ptr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00ff87"/>
-                  <stop offset="100%" stopColor="#00c060"/>
-                </linearGradient>
-              </defs>
-              <polygon points="11,26 1,2 21,2" fill="url(#ptr)" />
-              <polygon points="11,22 4,5 18,5" fill="#0a0a0a" opacity="0.3" />
-            </svg>
-          </div>
-
-          {/* Spinning disc */}
+          {/* Result card overlay */}
           <div
             style={{
-              transform: `rotate(${rotation}deg)`,
-              transition: spinning ? "transform 4s cubic-bezier(0.23, 1, 0.32, 1)" : "none",
-              borderRadius: "50%",
-              overflow: "visible",
-              position: "relative",
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: showResult ? 1 : 0,
+              pointerEvents: showResult ? "all" : "none",
+              transition: "opacity 0.35s",
             }}
           >
-            <svg width={W} height={W} viewBox={`0 0 ${W} ${W}`} style={{ display: "block" }}>
-              <defs>
-                <filter id="seg-glow">
-                  <feGaussianBlur stdDeviation="1.5" result="blur"/>
-                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-
-              {/* Outer decorative ring */}
-              <circle cx={CX} cy={CY} r={OR} fill="none" stroke="#1e1e1e" strokeWidth="5"/>
-              <circle cx={CX} cy={CY} r={OR + 4} fill="none" stroke="#141414" strokeWidth="2"/>
-
-              {/* Segments */}
-              {SEGMENTS.map((seg, i) => {
-                const midAngle = (i + 0.5) * SEG_ANGLE;
-                const lp = pol(R * 0.63, midAngle);
-                // Keep text within ±90° so it's always upright and readable
-                let textRot = midAngle - 90;
-                if (textRot >= 90) textRot -= 180;
-                return (
-                  <g key={i}>
-                    <path d={segPath(i)} fill={seg.bg} stroke={seg.border} strokeWidth="2"/>
-                    <g transform={`translate(${lp.x.toFixed(1)},${lp.y.toFixed(1)}) rotate(${textRot.toFixed(1)})`}>
-                      <text
-                        y="-5"
-                        textAnchor="middle"
-                        fontSize="14"
-                        fontWeight="800"
-                        fill={seg.color}
-                        fontFamily="'DM Mono', monospace"
-                      >
-                        {seg.coins}
-                      </text>
-                      <text y="9" textAnchor="middle" fontSize="7" fill={seg.color} opacity="0.6" fontFamily="'DM Mono', monospace" letterSpacing="1">
-                        COINS
-                      </text>
-                    </g>
-                  </g>
-                );
-              })}
-
-              {/* Hub */}
-              <circle cx={CX} cy={CY} r="30" fill="#080808" stroke="#1e1e1e" strokeWidth="2.5"/>
-              <circle cx={CX} cy={CY} r="22" fill="#0d0d0d" stroke="#252525" strokeWidth="1"/>
-              <circle cx={CX} cy={CY} r="9"  fill="#00ff87" opacity="0.9"/>
-              <circle cx={CX} cy={CY} r="4"  fill="#0a0a0a"/>
-            </svg>
+            <div
+              style={{
+                background: "linear-gradient(160deg, #7B3A10, #A0521C 50%, #7B3A10)",
+                border: "4px solid #FFD700",
+                borderRadius: 18,
+                padding: "36px 52px 28px",
+                textAlign: "center",
+                boxShadow: "0 0 60px rgba(255,180,0,0.35), 0 20px 60px rgba(0,0,0,0.6)",
+                transform: showResult ? "scale(1)" : "scale(0.85)",
+                transition: "transform 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+              }}
+            >
+              <div style={{ color: "#FFD700", fontFamily: "'Oswald', Arial, sans-serif", fontSize: 14, fontWeight: 600, letterSpacing: 5, textTransform: "uppercase", marginBottom: 6 }}>
+                🎉 You Won!
+              </div>
+              <div style={{ color: "#fff", fontFamily: "'Oswald', Arial, sans-serif", fontSize: 76, fontWeight: 700, lineHeight: 1, textShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                {result ?? 0}
+              </div>
+              <div style={{ color: "#FFD700", fontFamily: "'Oswald', Arial, sans-serif", fontSize: 24, fontWeight: 600, letterSpacing: 4, marginTop: 4, marginBottom: 22 }}>
+                COINS
+              </div>
+              <button
+                style={{
+                  background: "linear-gradient(180deg, #FFD93D, #FF9500)",
+                  border: "none",
+                  borderRadius: 50,
+                  padding: "11px 32px",
+                  fontFamily: "'Oswald', Arial, sans-serif",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                  color: "#5A2800",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 0 #A05000, 0 6px 16px rgba(0,0,0,0.3)",
+                }}
+                onClick={onClaimResult}
+              >
+                CLAIM REWARD
+              </button>
+            </div>
           </div>
-
-          {/* Outer glow ring (non-rotating) */}
-          <div
-            className="pointer-events-none absolute inset-0 rounded-full"
-            style={{ boxShadow: "0 0 0 3px #1a1a1a, 0 0 60px rgba(0,255,135,0.06)" }}
-          />
         </div>
 
-        {/* Result */}
-        {result !== null && (
-          <div className="mt-6 text-center">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">You won</div>
-            <div
-              className="font-display text-[52px] font-extrabold leading-none"
-              style={{ color: resultSeg?.color ?? "#00ff87", textShadow: `0 0 30px ${resultSeg?.color ?? "#00ff87"}55` }}
-            >
-              +{result.toLocaleString()}
-            </div>
-            <div className="font-mono text-[11px] text-ink-faint">coins added to your balance</div>
-          </div>
-        )}
-
-        {/* CTA / countdown */}
-        <div className="mt-6 flex flex-col items-center gap-2">
-          {!hasSpun ? (
+        {/* Controls below canvas */}
+        <div className="mt-5 flex flex-col items-center gap-3">
+          {!hasSpun && (
             <button
               onClick={onSpin}
               disabled={spinning}
-              className="flex w-full items-center justify-center gap-3 rounded-[12px] bg-brand py-[13px] text-[14px] font-bold text-[#080808] transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="spin-wheel-btn"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/spinTheWheelAsset.png"
-                alt=""
-                width={18}
-                height={18}
-                className={spinning ? "animate-spin" : ""}
-                style={{ filter: "brightness(0)" }}
-              />
-              {spinning ? "Spinning…" : "Spin the Wheel"}
+              {spinning ? "SPINNING…" : "SPIN"}
             </button>
-          ) : result !== null ? (
-            <div className="flex flex-col items-center gap-[6px] text-center">
+          )}
+
+          {hasSpun && !showResult && (
+            <div className="flex flex-col items-center gap-1 text-center">
+              {result !== null && (
+                <div style={{ fontFamily: "'Oswald', Arial, sans-serif", fontSize: 17, color: "#1A8F3E", letterSpacing: 1 }}>
+                  +{result} coins added!
+                </div>
+              )}
               <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Next spin in</div>
-              <div className="font-mono text-[28px] font-semibold tabular-nums" style={{ color: "#00ff87" }}>
+              <div className="font-mono text-[28px] font-semibold tabular-nums leading-none" style={{ color: "#00ff87" }}>
                 {countdown || "—"}
               </div>
             </div>
-          ) : null}
-        </div>
+          )}
 
-        {err && <p className="mt-3 text-center font-mono text-[11px] text-red-400">{err}</p>}
+          {err && <p className="font-mono text-[11px] text-red-400">{err}</p>}
+        </div>
       </div>
     </div>
   );

@@ -318,14 +318,24 @@ export default function SpinWheel({ initialHasSpun, nextSpinAt }: Props) {
     }, []);
     const winIdx = matches[Math.floor(Math.random() * matches.length)] ?? 0;
 
-    const jitter = (Math.random() - 0.5) * 0.3 * SLICE;
-    const targetAngleInSlice = (winIdx + 0.5) * SLICE + jitter;
-    const targetMod = ((2 * Math.PI - (targetAngleInSlice % (2 * Math.PI))) + 2 * Math.PI) % (2 * Math.PI);
+    console.log("Backend:", coinsWon);
+    console.log("Target index:", winIdx);
+    console.log("Target segment:", SEGS[winIdx]);[  ]
+
+    const segMidOffset = (winIdx + 0.5) * SLICE;
+    const targetMod  = ((2 * Math.PI - segMidOffset) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
     const currentMod = ((angleRef.current % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    const needed = (targetMod - currentMod + 2 * Math.PI) % (2 * Math.PI);
-    const rotations = 6 + Math.random() * 4;
+    const needed     = (targetMod - currentMod + 2 * Math.PI) % (2 * Math.PI);
+    const rotations  = 6 + Math.random() * 4;
     const deltaAngle = rotations * 2 * Math.PI + needed;
     const duration = 4800 + Math.random() * 1800;
+
+    console.log({
+      coinsWon,
+      winIdx,
+      targetSegment: SEGS[winIdx],
+      actualSegment: SEGS[getWinnerIndex(angleRef.current)]
+    });
 
     const startAngle = angleRef.current;
     const startTime = performance.now();

@@ -7,10 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 function UsernameForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const refCode = searchParams.get("ref");
 
   const supabase = createClient();
   const [username, setUsername] = useState("");
+  const [refCode, setRefCode] = useState(searchParams.get("ref") ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -26,16 +26,23 @@ function UsernameForm() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    // Resolve referral code to a user ID (if present)
+    // Resolve referral code to a user ID
     let referredBy: string | null = null;
-    if (refCode) {
+    const trimmedRef = refCode.trim();
+    if (trimmedRef) {
       const { data: referrer } = await supabase
         .from("users")
         .select("id")
-        .eq("referral_code", refCode)
-        .neq("id", user.id) // prevent self-referral
+        .eq("referral_code", trimmedRef)
+        .neq("id", user.id)
         .single();
-      if (referrer) referredBy = referrer.id;
+      if (referrer) {
+        referredBy = referrer.id;
+      } else {
+        setErr("Referral code not found — double-check and try again.");
+        setBusy(false);
+        return;
+      }
     }
 
     const updatePayload: Record<string, unknown> = { username: clean };
@@ -66,14 +73,30 @@ function UsernameForm() {
         </div>
 
         <form onSubmit={submit} className="rounded-[14px] border border-line bg-card p-6 space-y-4">
-          <input
-            autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. midfield_maestro"
-            className="w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] font-sans text-[13.5px] text-[#e0e0e0]"
-          />
+          <div>
+            <input
+              autoFocus
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. midfield_maestro"
+              className="w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] font-sans text-[13.5px] text-[#e0e0e0]"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.09em] text-ink-faint">
+              Referral code <span className="normal-case tracking-normal">(optional)</span>
+            </label>
+            <input
+              value={refCode}
+              onChange={(e) => setRefCode(e.target.value)}
+              placeholder="e.g. a1b2c3d4"
+              className="w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] font-mono text-[13px] text-[#e0e0e0] placeholder:text-ink-silent"
+            />
+          </div>
+
           {err && <p className="text-[12px] text-red-400">{err}</p>}
+
           <button
             disabled={busy}
             className="w-full rounded-[8px] py-[11px] text-[13.5px] font-semibold transition-all disabled:opacity-50"
