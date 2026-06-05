@@ -18,11 +18,20 @@ type Props = {
 };
 
 const MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
-const MEDAL_COLOR: Record<number, string> = { 1: "#FFD700", 2: "#a8a8a8", 3: "#cd8a3a" };
+const MEDAL_COLOR: Record<number, string> = {
+  1: "var(--color-gold)",
+  2: "var(--color-silver)",
+  3: "var(--color-bronze)",
+};
 const MEDAL_BG: Record<number, string> = {
-  1: "rgba(255,215,0,0.05)",
-  2: "rgba(168,168,168,0.04)",
-  3: "rgba(205,130,58,0.05)",
+  1: "var(--lb-medal-1-bg)",
+  2: "var(--lb-medal-2-bg)",
+  3: "var(--lb-medal-3-bg)",
+};
+const MEDAL_AVATAR: Record<number, string> = {
+  1: "var(--lb-medal-1-avatar)",
+  2: "var(--lb-medal-2-avatar)",
+  3: "var(--lb-medal-3-avatar)",
 };
 
 const PERIODS = [
@@ -48,8 +57,8 @@ function LBRow({ row }: { row: Row }) {
   return (
     <tr
       style={{
-        background: row.isMe ? "rgba(0,255,135,0.04)" : isTop3 ? MEDAL_BG[row.rank] : "transparent",
-        borderBottom: "1px solid #181818",
+        background: row.isMe ? "var(--lb-me-bg)" : isTop3 ? MEDAL_BG[row.rank] : "transparent",
+        borderBottom: "1px solid var(--lb-row-border)",
       }}
     >
       {/* Rank */}
@@ -59,7 +68,7 @@ function LBRow({ row }: { row: Row }) {
         ) : (
           <span
             className="font-mono text-[12px] tabular-nums"
-            style={{ color: row.isMe ? "#00ff87" : "#3a3a3a" }}
+            style={{ color: row.isMe ? "var(--color-brand)" : "var(--lb-rank-other)" }}
           >
             #{row.rank}
           </span>
@@ -72,7 +81,7 @@ function LBRow({ row }: { row: Row }) {
           borderLeft: isTop3
             ? `2px solid ${mc}`
             : row.isMe
-            ? "2px solid rgba(0,255,135,0.5)"
+            ? "2px solid var(--lb-me-border)"
             : "2px solid transparent",
         }}
       >
@@ -81,11 +90,11 @@ function LBRow({ row }: { row: Row }) {
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
             style={{
               background: row.isMe
-                ? "linear-gradient(135deg,#00ff87,#4d7cff)"
+                ? "var(--lb-me-avatar)"
                 : isTop3
-                ? `linear-gradient(135deg,${mc}60,${mc}20)`
-                : "#1a1a1a",
-              color: row.isMe ? "#0a0a0a" : isTop3 ? mc : "#3a3a3a",
+                ? MEDAL_AVATAR[row.rank]
+                : "var(--lb-avatar-other-bg)",
+              color: row.isMe ? "var(--lb-me-avatar-tx)" : isTop3 ? mc : "var(--lb-avatar-other-tx)",
             }}
           >
             {row.username[0].toUpperCase()}
@@ -95,7 +104,7 @@ function LBRow({ row }: { row: Row }) {
               className="text-[13px]"
               style={{
                 fontWeight: row.isMe ? 600 : 500,
-                color: row.isMe ? "#00ff87" : isTop3 ? mc : "#cccccc",
+                color: row.isMe ? "var(--color-brand)" : isTop3 ? mc : "var(--lb-username-other)",
               }}
             >
               {row.isMe ? "you (me)" : row.username}
@@ -109,10 +118,10 @@ function LBRow({ row }: { row: Row }) {
       {/* Coins */}
       <td className="px-5 py-3 text-right">
         <div className="flex items-center justify-end gap-[5px]">
-          <span className="flex opacity-70" style={{ color: "#00ff87" }}><CoinIcon /></span>
+          <span className="flex opacity-70" style={{ color: "var(--color-brand)" }}><CoinIcon /></span>
           <span
             className="font-mono text-[13px] font-semibold tabular-nums"
-            style={{ color: isTop3 ? mc : row.isMe ? "#00ff87" : "#cccccc" }}
+            style={{ color: isTop3 ? mc : row.isMe ? "var(--color-brand)" : "var(--lb-coins-other)" }}
           >
             {row.coins.toLocaleString()}
           </span>
@@ -120,8 +129,8 @@ function LBRow({ row }: { row: Row }) {
       </td>
       {/* Correct */}
       <td className="px-5 py-3 text-center">
-        <span className="font-mono text-[12.5px] tabular-nums text-[#888]">
-          {row.correct}<span className="text-[#333]">/{row.total}</span>
+        <span className="font-mono text-[12.5px] tabular-nums" style={{ color: "var(--lb-correct-num)" }}>
+          {row.correct}<span style={{ color: "var(--lb-correct-sep)" }}>/{row.total}</span>
         </span>
       </td>
       {/* Rate */}
@@ -130,13 +139,13 @@ function LBRow({ row }: { row: Row }) {
           <span
             className="font-mono text-[12.5px] font-semibold tabular-nums"
             style={{
-              color: row.rate >= 70 ? "#00ff87" : row.rate >= 60 ? "#a8d8a8" : "#888",
+              color: row.rate >= 70 ? "var(--color-brand)" : row.rate >= 60 ? "var(--lb-rate-mid)" : "var(--lb-rate-low)",
             }}
           >
             {row.rate.toFixed(1)}%
           </span>
           {row.rate >= 70 && (
-            <span className="flex opacity-70" style={{ color: "#00ff87" }}><UpIcon /></span>
+            <span className="flex opacity-70" style={{ color: "var(--color-brand)" }}><UpIcon /></span>
           )}
         </div>
       </td>
@@ -173,13 +182,13 @@ export default function LeaderboardClient({ rows, me }: Props) {
       className="cursor-pointer select-none font-mono text-[10.5px] uppercase tracking-[0.1em] whitespace-nowrap px-5 py-3"
       style={{
         textAlign: align as any,
-        color: sortCol === col ? "#00ff87" : "#333",
+        color: sortCol === col ? "var(--lb-th-sorted)" : "var(--lb-th-text)",
       }}
     >
       <span className="inline-flex items-center gap-1">
         {children}
         {sortCol === col && (
-          <span style={{ color: "#00ff87", display: "flex" }}>
+          <span style={{ color: "var(--lb-th-sorted)", display: "flex" }}>
             {sortAsc ? <UpIcon /> : <DownIcon />}
           </span>
         )}
@@ -197,9 +206,9 @@ export default function LeaderboardClient({ rows, me }: Props) {
             onClick={() => setPeriod(id)}
             className="rounded-[6px] px-[13px] py-[5px] text-[12px] transition-colors"
             style={{
-              background: period === id ? "#00ff87" : "transparent",
-              color: period === id ? "#080808" : "#4a4a4a",
-              border: `1px solid ${period === id ? "#00ff87" : "#222"}`,
+              background: period === id ? "var(--chip-active-bg)" : "transparent",
+              color: period === id ? "var(--chip-active-text)" : "var(--chip-inactive-text)",
+              border: `1px solid ${period === id ? "var(--chip-active-bg)" : "var(--chip-inactive-border)"}`,
               fontWeight: period === id ? 600 : 400,
             }}
           >
@@ -219,10 +228,10 @@ export default function LeaderboardClient({ rows, me }: Props) {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-line">
-              <th className="w-14 px-5 py-3 text-left font-mono text-[10.5px] uppercase tracking-[0.1em] text-[#333]">
+              <th className="w-14 px-5 py-3 text-left font-mono text-[10.5px] uppercase tracking-[0.1em]" style={{ color: "var(--lb-th-text)" }}>
                 Rank
               </th>
-              <th className="px-4 py-3 text-left font-mono text-[10.5px] uppercase tracking-[0.1em] text-[#333]">
+              <th className="px-4 py-3 text-left font-mono text-[10.5px] uppercase tracking-[0.1em]" style={{ color: "var(--lb-th-text)" }}>
                 Player
               </th>
               <TH col="coins">Coins</TH>
@@ -240,7 +249,7 @@ export default function LeaderboardClient({ rows, me }: Props) {
         {/* Ellipsis separator */}
         {me && !sorted.find((r) => r.isMe) && (
           <>
-            <div className="flex items-center gap-[10px] border-t border-b border-[#181818] px-5 py-[10px]">
+            <div className="flex items-center gap-[10px] px-5 py-[10px]" style={{ borderTop: "1px solid var(--lb-row-border)", borderBottom: "1px solid var(--lb-row-border)" }}>
               <div className="h-px flex-1 bg-line-subtle" />
               <span className="font-mono text-[10.5px] text-ink-silent">
                 · · · ranks {sorted.length + 1}–{me.rank - 1} · · ·

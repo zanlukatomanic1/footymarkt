@@ -131,7 +131,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
           ].map((s) => (
             <div key={s.label} className="rounded-[10px] border border-line bg-card px-[14px] py-[12px]">
               <div className="mb-[5px] font-mono text-[10px] uppercase tracking-[0.09em] text-ink-faint">{s.label}</div>
-              <div className="font-mono text-[22px] font-bold leading-none tabular-nums" style={{ color: s.accent ? "#00ff87" : "#d0d0d0" }}>{s.val}</div>
+              <div className="font-mono text-[22px] font-bold leading-none tabular-nums" style={{ color: s.accent ? "var(--color-brand)" : "var(--color-ink)" }}>{s.val}</div>
               <div className="mt-[3px] font-mono text-[10.5px] text-ink-faint">{s.sub}</div>
             </div>
           ))}
@@ -150,7 +150,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
           <div className="flex items-center gap-1.5">
             <span
               className="inline-block h-[6px] w-[6px] rounded-full"
-              style={{ background: live ? "#00ff87" : "#333", boxShadow: live ? "0 0 6px #00ff87" : "none" }}
+              style={{ background: live ? "var(--color-brand)" : "var(--color-line-strong)", boxShadow: live ? "0 0 6px var(--color-brand)" : "none" }}
             />
             <span className="font-mono text-[10px] text-ink-silent">
               {live ? "live" : "connecting…"} · {allDays.length} days · {matches.length} fixtures
@@ -167,13 +167,13 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
             onClick={() => setSelectedDay("all")}
             className="flex-shrink-0 rounded-[8px] border px-3 py-[7px] transition-all duration-150"
             style={{
-              background: selectedDay === "all" ? "#00ff87" : "#111",
-              borderColor: selectedDay === "all" ? "#00ff87" : "#222",
-              color: selectedDay === "all" ? "#080808" : "#555",
+              background: selectedDay === "all" ? "var(--chip-active-bg)" : "var(--chip-inactive-bg)",
+              borderColor: selectedDay === "all" ? "var(--chip-active-bg)" : "var(--chip-inactive-border)",
+              color: selectedDay === "all" ? "var(--chip-active-text)" : "var(--chip-inactive-text)",
             }}
           >
             <div className="font-mono text-[10px] font-bold uppercase tracking-[0.08em]">All</div>
-            <div className="font-mono text-[11px]" style={{ color: selectedDay === "all" ? "#0a2a18" : "#333" }}>
+            <div className="font-mono text-[11px]" style={{ color: selectedDay === "all" ? "var(--chip-active-sub)" : "var(--chip-inactive-count)" }}>
               {matches.length}
             </div>
           </button>
@@ -188,19 +188,19 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
                 onClick={() => setSelectedDay(key)}
                 className="flex-shrink-0 rounded-[8px] border px-3 py-[7px] text-left transition-all duration-150"
                 style={{
-                  background: active ? "#00ff87" : "#111",
-                  borderColor: active ? "#00ff87" : "#1e1e1e",
-                  color: active ? "#080808" : "#888",
+                  background: active ? "var(--chip-active-bg)" : "var(--chip-inactive-bg)",
+                  borderColor: active ? "var(--chip-active-bg)" : "var(--chip-inactive-border)",
+                  color: active ? "var(--chip-active-text)" : "var(--chip-inactive-text)",
                   minWidth: 58,
                 }}
               >
-                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: active ? "#0a2a18" : "#444" }}>
+                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: active ? "var(--chip-active-sub)" : "var(--chip-inactive-day)" }}>
                   {day}
                 </div>
-                <div className="font-mono text-[11.5px] font-semibold" style={{ color: active ? "#080808" : "#ccc" }}>
+                <div className="font-mono text-[11.5px] font-semibold" style={{ color: active ? "var(--chip-active-text)" : "var(--chip-inactive-date)" }}>
                   {date}
                 </div>
-                <div className="font-mono text-[10px]" style={{ color: active ? "#0a2a18" : "#333" }}>
+                <div className="font-mono text-[10px]" style={{ color: active ? "var(--chip-active-sub)" : "var(--chip-inactive-count)" }}>
                   {count}m
                 </div>
               </button>
@@ -211,7 +211,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
 
       {/* Match groups */}
       {groups.length === 0 && (
-        <div className="rounded-[12px] border border-dashed border-line-subtle bg-[#0d0d0d] py-12 text-center">
+        <div className="rounded-[12px] border border-dashed border-line-subtle bg-card py-12 text-center">
           <span className="font-mono text-[11px] text-ink-silent">No matches found.</span>
         </div>
       )}
@@ -221,7 +221,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
           {/* Day header */}
           <div className="mb-4 flex items-center gap-3">
             <div>
-              <div className="font-mono text-[13px] font-semibold text-[#ccc]">{groupLabel(key)}</div>
+              <div className="font-mono text-[13px] font-semibold text-ink">{groupLabel(key)}</div>
               <div className="font-mono text-[10px] text-ink-ghost">
                 {group.length} match{group.length !== 1 ? "es" : ""} · {group.filter(m => !m.result).length} open
               </div>
@@ -232,7 +232,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
                 <div
                   key={m.id}
                   className="h-[5px] w-[5px] rounded-full"
-                  style={{ background: m.result ? "#00ff87" : "#2a2a2a" }}
+                  style={{ background: m.result ? "var(--match-dot-settled)" : "var(--match-dot-open)" }}
                   title={`${fmtTime(m.kickoff_at)} ${m.result ? "settled" : "open"}`}
                 />
               ))}

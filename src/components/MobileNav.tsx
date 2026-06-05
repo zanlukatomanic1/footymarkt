@@ -60,7 +60,7 @@ export default function MobileNav({ signedIn, isAdmin, spinAvailable }: Props) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex flex-col border-t border-line bg-sidebar md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 flex flex-col bg-sidebar md:hidden" style={{ borderTop: "1px solid var(--sidebar-divider)" }}>
       <DailySpinWidget spinAvailable={spinAvailable} signedIn={signedIn} compact />
       <div className="flex">
         {TABS.map((tab) => {
@@ -70,7 +70,7 @@ export default function MobileNav({ signedIn, isAdmin, spinAvailable }: Props) {
               key={tab.id}
               href={tab.href}
               className="flex flex-1 flex-col items-center gap-1 py-3 text-[10px] transition-colors"
-              style={{ color: on ? "#00ff87" : "#4a4a4a" }}
+              style={{ color: on ? "var(--nav-active-color)" : "var(--nav-inactive)" }}
             >
               {tab.icon}
               <span>{tab.label}</span>

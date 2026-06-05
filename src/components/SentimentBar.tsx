@@ -11,12 +11,12 @@ export default function SentimentBar({ home, draw, away, height = 5, labels = tr
     <div>
       <div
         style={{ height, borderRadius: 999, overflow: "hidden", gap: "1px" }}
-        className="flex bg-[#111]"
+        className="flex bg-line-subtle"
       >
         <div
           style={{
             flex: home || 0.01,
-            background: "rgba(0,255,135,0.65)",
+            background: `rgba(var(--pick-home-rgb), 0.65)`,
             borderRadius: "999px 0 0 999px",
             transition: "flex 0.7s ease",
           }}
@@ -24,14 +24,14 @@ export default function SentimentBar({ home, draw, away, height = 5, labels = tr
         <div
           style={{
             flex: draw || 0.01,
-            background: "#353535",
+            background: "var(--color-line-strong)",
             transition: "flex 0.7s ease",
           }}
         />
         <div
           style={{
             flex: away || 0.01,
-            background: "rgba(77,124,255,0.65)",
+            background: `rgba(var(--pick-away-rgb), 0.65)`,
             borderRadius: "0 999px 999px 0",
             transition: "flex 0.7s ease",
           }}

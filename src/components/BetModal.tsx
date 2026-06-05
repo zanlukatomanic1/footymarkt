@@ -8,6 +8,7 @@ type Props = {
   outcome: Outcome;
   teamLabel: string;
   color: string;
+  rgb: string;
   sentiment: Sentiment;
   userCoins: number;
   onConfirm: (betAmount: number) => Promise<void>;
@@ -26,7 +27,7 @@ function CoinIcon({ color, size = 14 }: { color: string; size?: number }) {
   );
 }
 
-export default function BetModal({ outcome, teamLabel, color, sentiment, userCoins, onConfirm, onCancel }: Props) {
+export default function BetModal({ outcome, teamLabel, color, rgb, sentiment, userCoins, onConfirm, onCancel }: Props) {
   const max = Math.max(1, userCoins);
   const defaultBet = Math.min(100, max);
   const [amount, setAmount] = useState(defaultBet);
@@ -82,8 +83,8 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
     return () => window.removeEventListener("keydown", handler);
   }, [onCancel]);
 
-  const dimColor = `${color}20`;
-  const borderColor = `${color}40`;
+  const dimColor = `rgba(${rgb}, 0.12)`;
+  const borderColor = `rgba(${rgb}, 0.28)`;
 
   return (
     <div
@@ -94,9 +95,9 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
       <div
         className="w-full max-w-sm rounded-t-[20px] sm:rounded-[18px] p-6"
         style={{
-          background: "#141414",
-          border: "1px solid #242424",
-          boxShadow: `0 0 40px rgba(0,0,0,0.6), 0 0 0 1px ${color}10`,
+          background: "var(--color-card)",
+          border: "1px solid var(--color-line)",
+          boxShadow: `0 0 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(${rgb}, 0.06)`,
         }}
       >
         {/* Header */}
@@ -117,7 +118,7 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
           <button
             onClick={onCancel}
             className="flex h-7 w-7 items-center justify-center rounded-full text-ink-faint hover:text-ink transition-colors"
-            style={{ background: "#1e1e1e" }}
+            style={{ background: "var(--color-element)" }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -129,11 +130,11 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
         {/* Balance */}
         <div
           className="mb-4 flex items-center justify-between rounded-[10px] px-[14px] py-[10px]"
-          style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}
+          style={{ background: "var(--color-element)", border: "1px solid var(--color-line)" }}
         >
           <span className="font-mono text-[11px] text-ink-faint">Your balance</span>
           <div className="flex items-center gap-[5px]">
-            <CoinIcon color="#00ff87" size={12} />
+            <CoinIcon color="var(--color-brand)" size={12} />
             <span className="font-mono text-[13px] font-semibold text-brand tabular-nums">
               {userCoins.toLocaleString()}
             </span>
@@ -147,7 +148,7 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
           </div>
           <div
             className="flex items-center gap-2 rounded-[10px] px-[14px] py-[10px]"
-            style={{ background: "#0f0f0f", border: `1px solid ${borderColor}` }}
+            style={{ background: "var(--color-element)", border: `1px solid ${borderColor}` }}
           >
             <CoinIcon color={color} size={15} />
             <input
@@ -178,9 +179,9 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
               onClick={() => handleQuick(v)}
               className="flex-1 rounded-[8px] py-[6px] font-mono text-[11px] font-semibold transition-all"
               style={{
-                background: amount === v ? dimColor : "#0f0f0f",
-                border: `1px solid ${amount === v ? borderColor : "#1e1e1e"}`,
-                color: amount === v ? color : "#555",
+                background: amount === v ? dimColor : "var(--color-element)",
+                border: `1px solid ${amount === v ? borderColor : "var(--color-line)"}`,
+                color: amount === v ? color : "var(--color-ink-faint)",
               }}
             >
               {v}
@@ -191,7 +192,7 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
         {/* Payout breakdown */}
         <div
           className="mb-5 rounded-[12px] p-[14px]"
-          style={{ background: "#0d0d0d", border: "1px solid #1a1a1a" }}
+          style={{ background: "var(--color-element)", border: "1px solid var(--color-line)" }}
         >
           <div className="mb-[10px] font-mono text-[10px] uppercase tracking-[0.09em] text-ink-faint">
             If you win
@@ -227,7 +228,7 @@ export default function BetModal({ outcome, teamLabel, color, sentiment, userCoi
           className="w-full rounded-[10px] py-[13px] font-mono text-[13px] font-bold tracking-[0.04em] transition-all duration-150 disabled:opacity-40"
           style={{
             background: color,
-            color: "#080808",
+            color: "var(--chip-active-text)",
             boxShadow: busy ? "none" : `0 0 20px ${color}30`,
           }}
         >

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import DailySpinWidget from "@/components/DailySpinWidget";
 import CopyEmail from "@/components/CopyEmail";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV = [
   {
@@ -96,8 +97,8 @@ export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvaila
 
   return (
     <aside
-      className="hidden md:flex w-[220px] min-w-[220px] flex-col border-r border-line bg-sidebar"
-      style={{ height: "100vh" }}
+      className="hidden md:flex w-[220px] min-w-[220px] flex-col bg-sidebar"
+      style={{ height: "100vh", borderRight: "1px solid var(--sidebar-divider)" }}
     >
       {/* Logo */}
       <div className="px-[14px] py-[14px]">
@@ -114,8 +115,8 @@ export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvaila
               href={item.href}
               className="flex items-center gap-[9px] rounded-[8px] px-[11px] py-[9px] text-[13.5px] transition-colors"
               style={{
-                background: on ? "rgba(0,255,135,0.07)" : "transparent",
-                color: on ? "#00ff87" : "#4a4a4a",
+                background: on ? "var(--nav-active-bg)" : "transparent",
+                color: on ? "var(--nav-active-color)" : "var(--nav-inactive)",
                 fontWeight: on ? 600 : 400,
               }}
             >
@@ -124,7 +125,7 @@ export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvaila
               </span>
               {item.label}
               {on && (
-                <div className="ml-auto h-[5px] w-[5px] rounded-full bg-brand flex-shrink-0" />
+                <div className="ml-auto h-[5px] w-[5px] rounded-full flex-shrink-0" style={{ background: "var(--nav-active-color)" }} />
               )}
             </Link>
           );
@@ -135,14 +136,11 @@ export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvaila
       <DailySpinWidget spinAvailable={spinAvailable} signedIn={signedIn} />
 
       {/* Bottom section */}
-      <div className="border-t border-[#181818] px-[10px] pt-[10px] pb-[14px] mt-2">
-        <div className="flex items-center gap-[9px] rounded-[8px] px-[11px] py-[7px] text-[13px] text-[#333] cursor-pointer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-          <span>Settings</span>
-        </div>
+      <div
+        className="px-[10px] pt-[10px] pb-[14px] mt-2"
+        style={{ borderTop: "1px solid var(--sidebar-divider)" }}
+      >
+        <ThemeToggle />
         <CopyEmail className="px-[11px] py-[5px]" />
 
         {/* User row */}
@@ -150,17 +148,21 @@ export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvaila
           <div className="flex items-center gap-[9px] rounded-[8px] px-[11px] py-[10px] mt-1">
             <div
               className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full text-[10.5px] font-bold text-[#fff]"
-              style={{ background: "linear-gradient(135deg, #00ff87, #4d7cff)" }}
+              style={{ background: "var(--sidebar-avatar-gradient)" }}
             >
               {initial}
             </div>
             <div className="min-w-0">
-              <div className="text-[12px] font-semibold text-[#aaa] truncate">
+              <div
+                className="text-[12px] font-semibold truncate"
+                style={{ color: "var(--username-color)" }}
+              >
                 {username ?? "—"}
               </div>
               <button
                 onClick={signOut}
-                className="font-mono text-[10.5px] text-[#333] hover:text-ink-muted transition-colors"
+                className="font-mono text-[10.5px] hover:text-ink-muted transition-colors"
+                style={{ color: "var(--sidebar-low-text)" }}
               >
                 {coins.toLocaleString()} coins
               </button>

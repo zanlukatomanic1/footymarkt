@@ -4,6 +4,7 @@ import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import ThemeProvider from "@/components/ThemeProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -71,8 +72,16 @@ export default async function RootLayout({
     <html
       lang="en"
       className={`${dmSans.variable} ${dmMono.variable} ${syne.variable} ${oswald.variable}`}
+      suppressHydrationWarning
     >
       <body className="bg-page text-ink font-sans md:h-screen md:overflow-hidden">
+      {/* Runs synchronously before paint to prevent flash of wrong theme */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})()`,
+        }}
+      />
+      <ThemeProvider>
         <div className="flex md:h-screen">
           {/* Desktop sidebar */}
           <Sidebar
@@ -97,6 +106,7 @@ export default async function RootLayout({
           isAdmin={profile?.is_admin ?? false}
           spinAvailable={spinAvailable}
         />
+      </ThemeProvider>
       </body>
     </html>
   );

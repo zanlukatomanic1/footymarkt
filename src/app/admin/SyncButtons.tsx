@@ -38,10 +38,10 @@ function SyncButton({
 
   const isLoading = status.type === "loading";
   const colors = {
-    idle: { bg: "#161616", border: "#2a2a2a", color: "#aaa" },
-    loading: { bg: "#161616", border: "#333", color: "#666" },
-    ok: { bg: "rgba(0,255,135,0.06)", border: "rgba(0,255,135,0.25)", color: "#00ff87" },
-    err: { bg: "rgba(255,60,60,0.06)", border: "rgba(255,60,60,0.25)", color: "#ff5555" },
+    idle:    { bg: "var(--color-element)", border: "var(--color-line-strong)", color: "var(--color-ink-muted)" },
+    loading: { bg: "var(--color-element)", border: "var(--color-line)",        color: "var(--color-ink-faint)" },
+    ok:      { bg: "var(--lb-me-bg)",      border: "var(--lb-me-border)",      color: "var(--color-brand)"    },
+    err:     { bg: "rgba(255,60,60,0.06)", border: "rgba(255,60,60,0.25)",     color: "#ff5555"               },
   }[status.type];
 
   return (
@@ -62,7 +62,7 @@ function SyncButton({
       {status.msg && (
         <span
           className="font-mono text-[11px]"
-          style={{ color: status.type === "err" ? "#ff5555" : "#00ff87" }}
+          style={{ color: status.type === "err" ? "#ff5555" : "var(--color-brand)" }}
         >
           {status.msg}
         </span>

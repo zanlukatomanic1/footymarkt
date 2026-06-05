@@ -22,34 +22,11 @@ const OPTS: {
   key: Outcome;
   label: string;
   color: string;
-  dimColor: string;
-  borderColor: string;
-  bg: string;
+  rgb: string;
 }[] = [
-  {
-    key: "home",
-    label: "Home Win",
-    color: "#00ff87",
-    dimColor: "rgba(0,255,135,0.15)",
-    borderColor: "rgba(0,255,135,0.4)",
-    bg: "rgba(0,255,135,0.06)",
-  },
-  {
-    key: "draw",
-    label: "Draw",
-    color: "#888888",
-    dimColor: "rgba(136,136,136,0.12)",
-    borderColor: "rgba(136,136,136,0.3)",
-    bg: "rgba(136,136,136,0.04)",
-  },
-  {
-    key: "away",
-    label: "Away Win",
-    color: "#4d7cff",
-    dimColor: "rgba(77,124,255,0.15)",
-    borderColor: "rgba(77,124,255,0.4)",
-    bg: "rgba(77,124,255,0.06)",
-  },
+  { key: "home", label: "Home Win", color: "var(--pick-home-color)", rgb: "var(--pick-home-rgb)" },
+  { key: "draw", label: "Draw",     color: "var(--pick-draw-color)", rgb: "var(--pick-draw-rgb)" },
+  { key: "away", label: "Away Win", color: "var(--pick-away-color)", rgb: "var(--pick-away-rgb)" },
 ];
 
 function CoinIcon({ color }: { color: string }) {
@@ -149,7 +126,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
         href="/"
         className="mb-[22px] flex w-fit cursor-pointer items-center gap-[6px]"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--color-ink-faint)" }}>
           <polyline points="15 18 9 12 15 6" />
         </svg>
         <span className="font-mono text-[12px] text-ink-faint">Back to feed</span>
@@ -161,7 +138,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
           <div className="flex flex-col gap-[6px]">
             <span
               className="w-fit rounded-[4px] px-[7px] py-[2px] font-mono text-[10.5px] font-semibold tracking-[0.06em] text-brand"
-              style={{ background: "rgba(0,255,135,0.08)" }}
+              style={{ background: "var(--nav-active-bg)" }}
             >
               {match.competition}
             </span>
@@ -182,7 +159,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
             ) : (
               <span className="text-[36px] leading-none">🏳️</span>
             )}
-            <span className="font-display text-[24px] font-extrabold text-white tracking-[-0.5px] leading-[1.1]">
+            <span className="font-display text-[24px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1]">
               {match.home_team}
             </span>
             <span className="font-mono text-[12px] tracking-[0.1em] text-ink-faint">
@@ -193,7 +170,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
           <div className="flex-shrink-0 w-32 text-center">
             {match.result !== null && match.home_score !== null && match.away_score !== null ? (
               <>
-                <div className="mb-1 font-mono text-[32px] font-bold tabular-nums text-white leading-none">
+                <div className="mb-1 font-mono text-[32px] font-bold tabular-nums text-ink-bright leading-none">
                   {match.home_score} – {match.away_score}
                 </div>
                 <div className="mb-2 font-mono text-[10px] tracking-[0.12em] text-ink-ghost">FULL TIME</div>
@@ -204,10 +181,10 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 LIVE
               </div>
             ) : (
-              <div className="mb-2 font-mono text-[11px] tracking-[0.18em] text-[#2a2a2a]">VS</div>
+              <div className="mb-2 font-mono text-[11px] tracking-[0.18em] text-ink-silent">VS</div>
             )}
             <SentimentBar home={pct.home} draw={pct.draw} away={pct.away} height={4} labels={false} />
-            <div className="mt-[6px] font-mono text-[10px] text-[#2a2a2a]">
+            <div className="mt-[6px] font-mono text-[10px] text-ink-silent">
               {pct.home.toFixed(0)}% · {pct.draw.toFixed(0)}% · {pct.away.toFixed(0)}%
             </div>
           </div>
@@ -218,7 +195,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
             ) : (
               <span className="text-[36px] leading-none">🏳️</span>
             )}
-            <span className="font-display text-right text-[24px] font-extrabold text-white tracking-[-0.5px] leading-[1.1]">
+            <span className="font-display text-right text-[24px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1]">
               {match.away_team}
             </span>
             <span className="font-mono text-[12px] tracking-[0.1em] text-ink-faint">
@@ -257,7 +234,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 onClick={() => setCashingOut(false)}
                 disabled={cashoutBusy}
                 className="rounded-[8px] px-[14px] py-[8px] font-mono text-[12px] text-ink-faint transition-colors hover:text-ink disabled:opacity-40"
-                style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}
+                style={{ background: "var(--color-element)", border: "1px solid var(--color-line)" }}
               >
                 Keep bet
               </button>
@@ -266,9 +243,9 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
         ) : (
           <div
             className="mb-3.5 flex items-center gap-2 rounded-[10px] px-[14px] py-[10px]"
-            style={{ background: "rgba(0,255,135,0.05)", border: "1px solid rgba(0,255,135,0.15)" }}
+            style={{ background: "var(--nav-active-bg)", border: "1px solid var(--lb-me-border)" }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2" strokeLinecap="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" style={{ stroke: "var(--color-brand)" }}>
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -279,7 +256,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
               </div>
               {betAmount !== null && (
                 <div className="mt-[2px] flex items-center gap-[5px] font-mono text-[10.5px] text-ink-faint">
-                  <CoinIcon color="#00ff87" />
+                  <CoinIcon color="var(--color-brand)" />
                   <span>{betAmount.toLocaleString()} coins wagered</span>
                 </div>
               )}
@@ -322,10 +299,10 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
               onClick={() => !locked && handleSelect(opt.key)}
               className="relative flex flex-1 cursor-pointer flex-col gap-3 rounded-[14px] p-[24px] transition-all duration-200"
               style={{
-                background: isSelected ? opt.bg : isHov && !dimmed ? "#171717" : "#141414",
-                border: `1.5px solid ${isSelected ? opt.borderColor : isHov && !dimmed ? "#2a2a2a" : "#1e1e1e"}`,
+                background: isSelected ? `rgba(${opt.rgb}, 0.06)` : isHov && !dimmed ? "var(--color-element)" : "var(--color-card)",
+                border: `1.5px solid ${isSelected ? `rgba(${opt.rgb}, 0.35)` : isHov && !dimmed ? "var(--color-line-strong)" : "var(--color-line)"}`,
                 opacity: dimmed ? 0.35 : 1,
-                boxShadow: isSelected ? `0 0 24px ${opt.color}12, 0 0 0 1px ${opt.color}18` : "none",
+                boxShadow: isSelected ? `0 0 24px rgba(${opt.rgb}, 0.08), 0 2px 12px rgba(15,22,36,0.08)` : "none",
                 minHeight: 260,
               }}
             >
@@ -334,8 +311,8 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 <div
                   className="absolute right-3.5 top-3.5 flex items-center gap-[5px] rounded-[20px] px-[9px] py-[3px] font-mono text-[10px] font-bold"
                   style={{
-                    background: `${opt.color}20`,
-                    border: `1px solid ${opt.color}40`,
+                    background: `rgba(${opt.rgb}, 0.12)`,
+                    border: `1px solid rgba(${opt.rgb}, 0.28)`,
                     color: opt.color,
                   }}
                 >
@@ -353,7 +330,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 </div>
                 <div
                   className="text-[15px] font-semibold"
-                  style={{ color: isSelected ? opt.color : "#cccccc" }}
+                  style={{ color: isSelected ? opt.color : "var(--color-ink-muted)" }}
                 >
                   {teamLabel(opt)}
                 </div>
@@ -363,12 +340,12 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
               <div className="font-mono tabular-nums">
                 <div
                   className="text-[46px] font-medium leading-none tracking-[-2px]"
-                  style={{ color: isSelected ? opt.color : "#d0d0d0" }}
+                  style={{ color: isSelected ? opt.color : "var(--color-ink)" }}
                 >
                   {pctVal.toFixed(0)}
-                  <span className="text-[22px] text-[#444]">%</span>
+                  <span className="text-[22px] text-ink-dim">%</span>
                 </div>
-                <div className="mt-[4px] font-mono text-[10.5px] text-[#333]">
+                <div className="mt-[4px] font-mono text-[10.5px] text-ink-ghost">
                   market sentiment
                 </div>
               </div>
@@ -397,9 +374,9 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 <div
                   className="mt-auto rounded-[8px] border py-[9px] text-center text-[12.5px] font-semibold transition-all duration-150"
                   style={{
-                    background: pick !== null ? "transparent" : isHov ? `${opt.color}18` : "transparent",
-                    border: `1px solid ${pick !== null ? "#1a1a1a" : isHov ? `${opt.color}35` : "#1e1e1e"}`,
-                    color: pick !== null ? "#2a2a2a" : isHov ? opt.color : "#3a3a3a",
+                    background: pick !== null ? "transparent" : isHov ? `rgba(${opt.rgb}, 0.10)` : "transparent",
+                    border: `1px solid ${pick !== null ? "var(--color-line)" : isHov ? `rgba(${opt.rgb}, 0.35)` : "var(--color-line)"}`,
+                    color: pick !== null ? "var(--color-ink-ghost)" : isHov ? opt.color : "var(--color-ink-faint)",
                   }}
                 >
                   {pick !== null ? "—" : `Bet on ${teamLabel(opt)}`}
@@ -428,6 +405,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
             outcome={modalOutcome}
             teamLabel={modalOutcome === "home" ? match.home_team : modalOutcome === "away" ? match.away_team : "Draw"}
             color={opt.color}
+            rgb={opt.rgb}
             sentiment={sentiment}
             userCoins={coins}
             onConfirm={handleModalConfirm}

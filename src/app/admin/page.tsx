@@ -58,10 +58,10 @@ export default async function AdminPage() {
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           {[
-            { label: "Total Matches", val: list.length.toString(), color: "#cccccc" },
-            { label: "Settled", val: settled.toString(), color: "#00ff87" },
-            { label: "Pending", val: pending.toString(), color: "#888888" },
-            { label: "Predictions", val: (predCount ?? 0).toLocaleString(), color: "#4d7cff" },
+            { label: "Total Matches", val: list.length.toString(), color: "var(--color-ink)" },
+            { label: "Settled", val: settled.toString(), color: "var(--color-brand)" },
+            { label: "Pending", val: pending.toString(), color: "var(--color-ink-muted)" },
+            { label: "Predictions", val: (predCount ?? 0).toLocaleString(), color: "var(--color-accent)" },
           ].map((s) => (
             <div
               key={s.label}
@@ -83,7 +83,7 @@ export default async function AdminPage() {
         {/* Table */}
         <div className="overflow-hidden rounded-[12px] border border-line bg-card">
           <div className="flex items-center justify-between border-b border-line-subtle px-5 py-3.5">
-            <span className="text-[12px] font-semibold text-[#bbb]">Matches</span>
+            <span className="text-[12px] font-semibold text-ink-muted">Matches</span>
             <div className="flex items-center gap-2">
               <div className="h-[7px] w-[7px] rounded-full bg-brand" />
               <span className="font-mono text-[10.5px] text-ink-faint">
@@ -123,7 +123,7 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-3.5 flex items-center gap-2">
-          <div className="h-[6px] w-[6px] rounded-full bg-[#2a2a2a]" />
+          <div className="h-[6px] w-[6px] rounded-full bg-line-strong" />
           <span className="font-mono text-[11px] text-ink-silent">
             Settling a result triggers coin payouts for all correct predictions in that match.
           </span>

@@ -155,14 +155,14 @@ const N_BULBS  = 18;
 
 /* ── Segments (7) ─────────────────────────────────── */
 const SEGS = [
-  { label: '500',  fill: '#1A8F3E', text: '#fff'    },
-  { label: '100',  fill: '#F4F4F4', text: '#166830' },
-  { label: '200',  fill: '#1A8F3E', text: '#fff'    },
-  { label: '50',   fill: '#F4F4F4', text: '#166830' },
-  { label: '300',  fill: '#1A8F3E', text: '#fff'    },
-  { label: '100',  fill: '#F4F4F4', text: '#166830' },
-  { label: '50',   fill: '#1A8F3E', text: '#fff'    },
-  { label: '100',  fill: '#F4F4F4', text: '#166830' },
+  { label: '500',  fill: '#C91920', text: '#fff'    },
+  { label: '100',  fill: '#F3ECE0', text: '#B81218' },
+  { label: '200',  fill: '#C91920', text: '#fff'    },
+  { label: '50',   fill: '#F3ECE0', text: '#B81218' },
+  { label: '300',  fill: '#C91920', text: '#fff'    },
+  { label: '100',  fill: '#F3ECE0', text: '#B81218' },
+  { label: '50',   fill: '#C91920', text: '#fff'    },
+  { label: '100',  fill: '#F3ECE0', text: '#B81218' },
 ];
 
 const N     = SEGS.length;
@@ -179,39 +179,47 @@ let lastBulbTime = 0;
 ══════════════════════════════════════════════════ */
 
 function drawWoodRing() {
-  /* black ring fill */
-  const rg = ctx.createRadialGradient(cx - 50, cy - 50, 10, cx, cy, OUTER_R * 1.05);
-  rg.addColorStop(0.00, '#3a3a3a');
-  rg.addColorStop(0.30, '#1c1c1c');
-  rg.addColorStop(0.65, '#0e0e0e');
-  rg.addColorStop(1.00, '#050505');
+  /* fill */
+  const rg = ctx.createRadialGradient(cx - 55, cy - 55, 14, cx, cy, OUTER_R * 1.05);
+  rg.addColorStop(0.00, '#D49050');
+  rg.addColorStop(0.18, '#C07838');
+  rg.addColorStop(0.45, '#9A4E18');
+  rg.addColorStop(0.72, '#7A3A10');
+  rg.addColorStop(0.88, '#9A4E18');
+  rg.addColorStop(1.00, '#6B3210');
 
   ctx.beginPath();
   ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
   ctx.fillStyle = rg;
   ctx.fill();
 
-  /* subtle top-left sheen */
+  /* wood grain lines */
   ctx.save();
   ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2); ctx.clip();
-  const hl = ctx.createRadialGradient(cx - 80, cy - 80, 0, cx - 20, cy - 20, OUTER_R * 0.65);
-  hl.addColorStop(0, 'rgba(255,255,255,0.10)');
-  hl.addColorStop(1, 'rgba(255,255,255,0)');
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx - OUTER_R * Math.cos(a), cy - OUTER_R * Math.sin(a));
+    ctx.lineTo(cx + OUTER_R * Math.cos(a), cy + OUTER_R * Math.sin(a));
+    ctx.strokeStyle = `rgba(0,0,0,${0.04 + (i % 3) * 0.018})`;
+    ctx.lineWidth = 1.2 + (i % 2) * 0.8;
+    ctx.stroke();
+  }
+  /* highlight */
+  const hl = ctx.createRadialGradient(cx - 75, cy - 75, 0, cx - 15, cy - 15, OUTER_R * 0.7);
+  hl.addColorStop(0, 'rgba(255,210,110,0.28)');
+  hl.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
   ctx.fillStyle = hl; ctx.fill();
   ctx.restore();
 
-  /* outer border */
+  /* outer dark ring */
   ctx.beginPath(); ctx.arc(cx, cy, OUTER_R, 0, Math.PI * 2);
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 7; ctx.stroke();
+  ctx.strokeStyle = '#2E1406'; ctx.lineWidth = 6; ctx.stroke();
 
-  /* green accent ring just inside outer edge */
-  ctx.beginPath(); ctx.arc(cx, cy, OUTER_R - 6, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(26,143,62,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
-
-  /* inner border */
+  /* inner ring border */
   ctx.beginPath(); ctx.arc(cx, cy, INNER_R, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.strokeStyle = 'rgba(30,10,0,0.45)'; ctx.lineWidth = 2.5; ctx.stroke();
 }
 
 function drawSegments() {
@@ -246,7 +254,7 @@ function drawSegments() {
     ctx.stroke();
 
     /* shimmer on light segments */
-    if (SEGS[i].fill !== '#1A8F3E') {
+    if (SEGS[i].fill !== '#C91920') {
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -287,29 +295,42 @@ function drawSegments() {
 }
 
 function drawHub() {
-  /* black hub fill */
+  /* wood fill */
   const hg = ctx.createRadialGradient(cx - 16, cy - 16, 4, cx, cy, HUB_R);
-  hg.addColorStop(0.00, '#3a3a3a');
-  hg.addColorStop(0.40, '#1a1a1a');
-  hg.addColorStop(1.00, '#080808');
+  hg.addColorStop(0.00, '#D4904A');
+  hg.addColorStop(0.30, '#A05520');
+  hg.addColorStop(0.65, '#7A3A10');
+  hg.addColorStop(1.00, '#521E06');
   ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
   ctx.fillStyle = hg; ctx.fill();
 
+  /* hub grain */
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2); ctx.clip();
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx - HUB_R * Math.cos(a), cy - HUB_R * Math.sin(a));
+    ctx.lineTo(cx + HUB_R * Math.cos(a), cy + HUB_R * Math.sin(a));
+    ctx.strokeStyle = 'rgba(0,0,0,0.09)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  ctx.restore();
+
   /* hub highlight */
   const hhl = ctx.createRadialGradient(cx - 14, cy - 14, 0, cx, cy, HUB_R);
-  hhl.addColorStop(0, 'rgba(255,255,255,0.12)');
-  hhl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+  hhl.addColorStop(0, 'rgba(255,210,120,0.42)');
+  hhl.addColorStop(0.6, 'rgba(255,150,50,0.10)');
   hhl.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
   ctx.fillStyle = hhl; ctx.fill();
 
-  /* green accent border */
+  /* border */
   ctx.beginPath(); ctx.arc(cx, cy, HUB_R, 0, Math.PI * 2);
-  ctx.strokeStyle = '#1A8F3E'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = '#2E1406'; ctx.lineWidth = 3.5; ctx.stroke();
 
   /* inner decorative ring */
   ctx.beginPath(); ctx.arc(cx, cy, HUB_R - 11, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(26,143,62,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,200,100,0.18)'; ctx.lineWidth = 1.5; ctx.stroke();
 }
 
 function drawBulbs(now) {
@@ -324,26 +345,26 @@ function drawBulbs(now) {
       bright = (i % 2 === bulbTick % 2) ? 1.0 : 0.35;
     }
 
-    /* outer glow — green tint */
+    /* outer glow */
     const gw = ctx.createRadialGradient(bx, by, 0, bx, by, BULB_SZ * 2.8);
-    gw.addColorStop(0, `rgba(150,255,180,${0.55 * bright})`);
-    gw.addColorStop(0.5, `rgba(26,143,62,${0.22 * bright})`);
-    gw.addColorStop(1, 'rgba(26,143,62,0)');
+    gw.addColorStop(0, `rgba(255,240,140,${0.55 * bright})`);
+    gw.addColorStop(0.5, `rgba(255,200,40,${0.22 * bright})`);
+    gw.addColorStop(1, 'rgba(255,200,40,0)');
     ctx.beginPath(); ctx.arc(bx, by, BULB_SZ * 2.8, 0, Math.PI * 2);
     ctx.fillStyle = gw; ctx.fill();
 
     /* bulb body */
     const bg = ctx.createRadialGradient(bx - 3.5, by - 3.5, 1.5, bx, by, BULB_SZ);
-    bg.addColorStop(0.00, `rgba(220,255,230,${0.92 * bright + 0.04})`);
-    bg.addColorStop(0.35, `rgba(${Math.round(60 * bright + 80)},${Math.round(200 * bright + 30)},${Math.round(100 * bright)},1)`);
-    bg.addColorStop(0.80, `rgba(${Math.round(10 * bright + 10)},${Math.round(120 * bright + 10)},${Math.round(40 * bright)},1)`);
-    bg.addColorStop(1.00, `rgba(0,${Math.round(70 * bright)},${Math.round(20 * bright)},1)`);
+    bg.addColorStop(0.00, `rgba(255,255,235,${0.92 * bright + 0.04})`);
+    bg.addColorStop(0.35, `rgba(255,${Math.round(210 * bright + 20)},${Math.round(55 * bright)},1)`);
+    bg.addColorStop(0.80, `rgba(${Math.round(195 * bright + 25)},${Math.round(128 * bright + 8)},0,1)`);
+    bg.addColorStop(1.00, `rgba(${Math.round(130 * bright + 18)},${Math.round(78 * bright)},0,1)`);
 
     ctx.beginPath(); ctx.arc(bx, by, BULB_SZ, 0, Math.PI * 2);
     ctx.fillStyle = bg; ctx.fill();
 
     ctx.beginPath(); ctx.arc(bx, by, BULB_SZ, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(0,60,20,${0.75 * bright + 0.15})`;
+    ctx.strokeStyle = `rgba(90,48,0,${0.75 * bright + 0.15})`;
     ctx.lineWidth = 1; ctx.stroke();
   }
 }
@@ -365,9 +386,9 @@ function drawPointer() {
   ctx.closePath();
 
   const pg = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0);
-  pg.addColorStop(0,   '#17a83a');
-  pg.addColorStop(0.5, '#2ecc60');
-  pg.addColorStop(1,   '#17a83a');
+  pg.addColorStop(0,   '#E82020');
+  pg.addColorStop(0.5, '#FF5848');
+  pg.addColorStop(1,   '#E82020');
   ctx.fillStyle = pg; ctx.fill();
 
   ctx.shadowColor = 'transparent';

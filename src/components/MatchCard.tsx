@@ -18,9 +18,15 @@ type Props = {
 };
 
 const PICK_COLOR: Record<Outcome, string> = {
-  home: "#00ff87",
-  draw: "#666666",
-  away: "#4d7cff",
+  home: "var(--pick-home-color)",
+  draw: "var(--pick-draw-color)",
+  away: "var(--pick-away-color)",
+};
+
+const PICK_RGB: Record<Outcome, string> = {
+  home: "var(--pick-home-rgb)",
+  draw: "var(--pick-draw-rgb)",
+  away: "var(--pick-away-rgb)",
 };
 
 export default function MatchCard({ match, sentiment, userPick, signedIn }: Props) {
@@ -77,9 +83,9 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
       onMouseLeave={() => setHov(false)}
       className="block rounded-[12px] p-[18px] transition-all duration-150"
       style={{
-        background: hov ? "#171717" : "#141414",
-        border: `1px solid ${hov ? "#2c2c2c" : "#1e1e1e"}`,
-        boxShadow: hov ? "0 0 0 1px rgba(0,255,135,0.04)" : "none",
+        background: hov ? "var(--color-element)" : "var(--color-card)",
+        border: `1px solid ${hov ? "var(--color-line-strong)" : "var(--color-line)"}`,
+        boxShadow: hov ? "0 2px 12px rgba(15,22,36,0.07)" : "0 1px 3px rgba(15,22,36,0.04)",
       }}
     >
       {/* Header */}
@@ -100,10 +106,10 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
           ) : (
             <span className="text-[22px] leading-none">🏳️</span>
           )}
-          <span className="text-[13px] font-semibold text-[#e0e0e0] tracking-[-0.2px] leading-[1.2]">
+          <span className="text-[13px] font-semibold text-ink tracking-[-0.2px] leading-[1.2]">
             {match.home_team}
           </span>
-          <span className="font-mono text-[9.5px] text-[#333] tracking-[0.1em]">
+          <span className="font-mono text-[9.5px] text-ink-faint tracking-[0.1em]">
             {home.code}
           </span>
         </div>
@@ -111,7 +117,7 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
         {/* Center: score if settled, LIVE if in progress, VS if upcoming */}
         <div className="flex-shrink-0 flex flex-col items-center gap-[3px] pt-1">
           {match.result !== null && match.home_score !== null && match.away_score !== null ? (
-            <span className="font-mono text-[18px] font-bold tabular-nums text-white leading-none">
+            <span className="font-mono text-[18px] font-bold tabular-nums text-ink-bright leading-none">
               {match.home_score} – {match.away_score}
             </span>
           ) : locked && match.result === null ? (
@@ -120,7 +126,7 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
               LIVE
             </span>
           ) : (
-            <span className="font-mono text-[10px] text-[#2a2a2a] tracking-[0.12em]">VS</span>
+            <span className="font-mono text-[10px] text-ink-silent tracking-[0.12em]">VS</span>
           )}
         </div>
 
@@ -130,10 +136,10 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
           ) : (
             <span className="text-[22px] leading-none">🏳️</span>
           )}
-          <span className="text-right text-[13px] font-semibold text-[#e0e0e0] tracking-[-0.2px] leading-[1.2]">
+          <span className="text-right text-[13px] font-semibold text-ink tracking-[-0.2px] leading-[1.2]">
             {match.away_team}
           </span>
-          <span className="font-mono text-[9.5px] text-[#333] tracking-[0.1em]">
+          <span className="font-mono text-[9.5px] text-ink-faint tracking-[0.1em]">
             {away.code}
           </span>
         </div>
@@ -146,7 +152,7 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
 
       {/* Footer */}
       <div className="mt-3.5 flex items-center justify-between pt-[2px]">
-        <span className="font-mono text-[10.5px] text-[#2e2e2e]">
+        <span className="font-mono text-[10.5px] text-ink-ghost">
           {sent.total_count.toLocaleString()} preds
         </span>
 
@@ -155,8 +161,8 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
             className="rounded-[5px] px-[9px] py-[3px] font-mono text-[10.5px] font-bold tracking-[0.05em]"
             style={{
               color: PICK_COLOR[match.result],
-              background: `${PICK_COLOR[match.result]}12`,
-              border: `1px solid ${PICK_COLOR[match.result]}28`,
+              background: `rgba(${PICK_RGB[match.result]}, 0.09)`,
+              border: `1px solid rgba(${PICK_RGB[match.result]}, 0.22)`,
             }}
           >
             {match.result === "home" ? home.code : match.result === "away" ? away.code : "DRAW"}
@@ -166,8 +172,8 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
             className="flex items-center gap-[5px] rounded-[6px] px-[10px] py-[4px] font-mono text-[10.5px] font-bold tracking-[0.06em]"
             style={{
               color: PICK_COLOR[pick],
-              background: `${PICK_COLOR[pick]}12`,
-              border: `1px solid ${PICK_COLOR[pick]}30`,
+              background: `rgba(${PICK_RGB[pick]}, 0.09)`,
+              border: `1px solid rgba(${PICK_RGB[pick]}, 0.22)`,
             }}
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -177,23 +183,21 @@ export default function MatchCard({ match, sentiment, userPick, signedIn }: Prop
           </div>
         ) : locked ? null : (
           <div className="flex gap-[5px]" onClick={(e) => e.preventDefault()}>
-            {([["home", home.code, "#00ff87"], ["draw", "D", "#555555"], ["away", away.code, "#4d7cff"]] as const).map(
-              ([k, lbl, col]) => (
+            {(["home", "draw", "away"] as Outcome[]).map((k) => (
                 <button
                   key={k}
                   disabled={busy}
-                  onClick={(e) => handlePredict(e, k as Outcome)}
+                  onClick={(e) => handlePredict(e, k)}
                   className="rounded-[6px] px-[9px] py-[4px] font-mono text-[10px] font-semibold tracking-[0.06em] transition-colors disabled:opacity-50"
                   style={{
                     background: "transparent",
-                    border: `1px solid ${col}28`,
-                    color: col,
+                    border: `1px solid rgba(${PICK_RGB[k]}, 0.22)`,
+                    color: PICK_COLOR[k],
                   }}
                 >
-                  {lbl}
+                  {k === "home" ? home.code : k === "away" ? away.code : "D"}
                 </button>
-              )
-            )}
+              ))}
           </div>
         )}
       </div>

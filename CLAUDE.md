@@ -90,7 +90,29 @@ RLS: predictions can only be inserted/updated by the owning user AND only while 
 
 ## Design Tokens (Tailwind)
 
-Key colour names: `page` (#070707), `card` (#141414), `element` (#1a1a1a), `sidebar` (#0a0a0a), `topbar` (#0f0f0f), `brand` (#00ff87), `accent` (#4d7cff), `line` (#1e1e1e), `line-subtle/strong/muted`, `ink` through `ink-silent` (descending brightness). Gold/silver/bronze for leaderboard ranks.
+All tokens are CSS custom properties on `:root` (dark) and `[data-theme="light"]` (light). Tailwind maps them via `tailwind.config.ts`.
+
+**Dark mode (default):**
+Key names: `page` (#070707), `card` (#141414), `element` (#1a1a1a), `sidebar` (#0a0a0a), `topbar` (#0f0f0f), `brand` (#00ff87), `accent` (#4d7cff), `line` (#1e1e1e), `line-subtle/strong/muted`, `ink` → `ink-silent` (descending brightness). Gold/silver/bronze for ranks.
+
+**Light mode (`[data-theme="light"]`):**
+`page` (#F2F5FA), `card` (#FFFFFF), `element` (#F2F5FA), `sidebar` (#161616 — **always dark**), `topbar` (#FFFFFF), `brand` (#5A9600), `accent` (#3560D8), `line` (#E3E8F0), `ink` (#0F1624), `ink-muted` (#5A6478), `ink-faint` (#96A0B0). Gold (#B8860A), silver (#787878), bronze (#966220).
+
+**Additional CSS vars (both themes, in `globals.css`):**
+- `--nav-active-color` — active nav item colour (sidebar-specific: `#00ff87` dark / `#74C200` light)
+- `--sidebar-avatar-gradient` — sidebar user avatar gradient
+- `--sidebar-divider` — sidebar/mobile-nav border colour (always dark-appropriate)
+- `--pick-home/draw/away-color` and `--pick-home/draw/away-rgb` — pick outcome colours (use `rgba(var(--pick-home-rgb), 0.12)` for tinted backgrounds)
+- `--chip-active-bg/text/sub`, `--chip-inactive-bg/border/text/day/date/count` — date-nav / filter chip states
+- `--match-dot-settled/open` — timeline dots on home feed
+- `--lb-*` — leaderboard row backgrounds, medal avatars, text colours, header colours
+
+### Theme switching
+- `ThemeProvider` (`src/components/ThemeProvider.tsx`) stores choice in `localStorage` and toggles `data-theme` on `<html>`.
+- `ThemeToggle` (`src/components/ThemeToggle.tsx`) is rendered in the sidebar bottom section.
+- `layout.tsx` runs an inline sync script before paint to prevent flash of wrong theme. `<html suppressHydrationWarning>` suppresses the expected React hydration warning.
+- **Sidebar is always dark** (#161616) regardless of theme — sidebar-specific tokens (`--nav-active-color`, `--sidebar-divider`, `--widget-bg`, etc.) are set to dark-appropriate values even in light mode.
+- **Never use hardcoded dark hex values** (#141414, #1a1a1a, #00ff87, etc.) in components — always use CSS vars so both themes work.
 
 ## Key Utilities
 
@@ -104,7 +126,7 @@ Key colour names: `page` (#070707), `card` (#141414), `element` (#1a1a1a), `side
 
 ## What's Not Built Yet
 
-- Real-time sentiment updates (Supabase Realtime channels on `predictions` table)
 - API-Football integration for live fixtures/results
 - Push notifications
 - Match venue data
+- Light mode on remaining components: `BetModal`, `SyncButtons`, `match/[id]` prediction page, `leagues/[id]` detail page, `account` page — these still have some hardcoded dark hex values

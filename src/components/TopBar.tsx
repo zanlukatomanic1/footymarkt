@@ -26,7 +26,10 @@ export default async function TopBar({ title, subtitle }: Props) {
   return (
     <div className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-line bg-topbar px-[22px]">
       <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-semibold text-[#ddd] tracking-[-0.2px]">
+        <div
+          className="text-[14px] font-semibold tracking-[-0.2px]"
+          style={{ color: "var(--topbar-title)" }}
+        >
           {title}
         </div>
         {subtitle && (
@@ -38,9 +41,12 @@ export default async function TopBar({ title, subtitle }: Props) {
 
       {user ? (
         <>
-          <div className="flex items-center gap-[6px] rounded-[8px] border border-[#242424] bg-card px-[12px] py-[5px]">
+          <div
+            className="flex items-center gap-[6px] rounded-[8px] border bg-page px-[12px] py-[5px]"
+            style={{ borderColor: "var(--color-line-strong)" }}
+          >
             {/* Coin icon */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2.2" strokeLinecap="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" style={{ stroke: "var(--color-brand)" }}>
               <circle cx="12" cy="12" r="9" />
               <path d="M9.5 9.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2-1 2-2.5 2.5-2.5 1-2.5 2.5 1.1 2 2.5 2 2.5-.9 2.5-2" />
               <path d="M12 7v1M12 16v1" />
@@ -53,14 +59,26 @@ export default async function TopBar({ title, subtitle }: Props) {
           </div>
 
           {/* Bell */}
-          <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border border-[#222] bg-card cursor-pointer">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" strokeWidth="1.8" strokeLinecap="round">
+          <div
+            className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] border bg-page cursor-pointer"
+            style={{ borderColor: "var(--color-line-muted)" }}
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              className="text-ink-dim"
+            >
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             <div
               className="absolute right-[6px] top-[5px] h-[6px] w-[6px] rounded-full bg-brand"
-              style={{ border: "1.5px solid #0f0f0f" }}
+              style={{ border: "1.5px solid var(--badge-ring)" }}
             />
           </div>
         </>

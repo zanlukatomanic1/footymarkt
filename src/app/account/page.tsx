@@ -45,13 +45,13 @@ export default async function AccountPage() {
         <div className="mb-4 rounded-[14px] border border-line bg-card p-6">
           <div className="mb-5 flex items-center gap-4">
             <div
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-[18px] font-bold text-[#0a0a0a]"
-              style={{ background: "linear-gradient(135deg, #00ff87, #4d7cff)" }}
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-[18px] font-bold"
+              style={{ background: "var(--lb-me-avatar)", color: "var(--lb-me-avatar-tx)" }}
             >
               {(profile?.username ?? "?")[0].toUpperCase()}
             </div>
             <div>
-              <div className="text-[16px] font-semibold text-[#e0e0e0]">
+              <div className="text-[16px] font-semibold text-ink">
                 {profile?.username ?? "—"}
               </div>
               <div className="font-mono text-[11px] text-ink-faint">{user.email}</div>
@@ -60,10 +60,10 @@ export default async function AccountPage() {
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Coins", val: (profile?.coins ?? 0).toLocaleString(), color: "#00ff87" },
-              { label: "Rank", val: `#${(rankCount ?? 0) + 1}`, color: "#e0e0e0" },
-              { label: "Predictions", val: (predCount ?? 0).toString(), color: "#e0e0e0" },
-              { label: "Win Rate", val: `${rate}%`, color: parseFloat(rate) >= 60 ? "#00ff87" : "#888" },
+              { label: "Coins",       val: (profile?.coins ?? 0).toLocaleString(), color: "var(--color-brand)" },
+              { label: "Rank",        val: `#${(rankCount ?? 0) + 1}`,             color: "var(--color-ink)"   },
+              { label: "Predictions", val: (predCount ?? 0).toString(),            color: "var(--color-ink)"   },
+              { label: "Win Rate",    val: `${rate}%`, color: parseFloat(rate) >= 60 ? "var(--color-brand)" : "var(--lb-rate-low)" },
             ].map((s) => (
               <div key={s.label} className="rounded-[10px] border border-line bg-element px-3.5 py-3">
                 <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.09em] text-ink-faint">
@@ -84,7 +84,7 @@ export default async function AccountPage() {
         {profile?.referral_code && (
           <div className="mb-4 rounded-[14px] border border-line bg-card p-6">
             <div className="mb-4">
-              <div className="text-[14px] font-semibold text-[#e0e0e0]">Refer a Friend</div>
+              <div className="text-[14px] font-semibold text-ink">Refer a Friend</div>
               <p className="mt-1 font-mono text-[11px] text-ink-faint">
                 Earn 100 coins for every friend who signs up and makes 3 predictions. Max 50 referrals.
               </p>
@@ -97,7 +97,7 @@ export default async function AccountPage() {
                 <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.09em] text-ink-faint">
                   Friends joined
                 </div>
-                <div className="font-mono text-[20px] font-bold tabular-nums text-[#e0e0e0]">
+                <div className="font-mono text-[20px] font-bold tabular-nums text-ink">
                   {totalReferrals ?? 0}
                 </div>
               </div>

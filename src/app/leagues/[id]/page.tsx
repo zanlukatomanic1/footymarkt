@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const RANK_COLOR: Record<number, string> = { 1: "#FFD700", 2: "#a8a8a8", 3: "#cd8a3a" };
+const RANK_COLOR: Record<number, string> = {
+  1: "var(--color-gold)",
+  2: "var(--color-silver)",
+  3: "var(--color-bronze)",
+};
 
 type Member = {
   id: string;
@@ -117,7 +121,7 @@ export default function LeaguePage() {
     <div className="p-[22px] md:p-6">
       {/* Back */}
       <Link href="/leagues" className="mb-[22px] flex w-fit items-center gap-[6px]">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--color-ink-faint)" }}>
           <polyline points="15 18 9 12 15 6" />
         </svg>
         <span className="font-mono text-[12px] text-ink-faint">My Leagues</span>
@@ -126,7 +130,7 @@ export default function LeaguePage() {
       {/* League header card */}
       <div className="mb-[22px] flex items-center justify-between rounded-[14px] border border-line bg-card px-6 py-[22px]">
         <div>
-          <div className="font-display text-[22px] font-extrabold text-white tracking-[-0.5px] mb-[5px]">
+          <div className="font-display text-[22px] font-extrabold text-ink-bright tracking-[-0.5px] mb-[5px]">
             {league?.name}
           </div>
           <div className="flex gap-4">
@@ -157,7 +161,7 @@ export default function LeaguePage() {
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
                 className="rounded-[7px] px-3 py-[6px] font-mono text-[11px] text-ink-faint transition-colors hover:text-ink"
-                style={{ background: "#111", border: "1px solid #222" }}
+                style={{ background: "var(--color-element)", border: "1px solid var(--color-line)" }}
               >
                 Cancel
               </button>
@@ -190,9 +194,9 @@ export default function LeaguePage() {
             onClick={handleCopy}
             className="flex items-center gap-[5px] rounded-[7px] border px-[10px] py-[6px] font-mono text-[11px] transition-all duration-150"
             style={{
-              background: copied ? "rgba(0,255,135,0.1)" : "#1a1a1a",
-              border: `1px solid ${copied ? "rgba(0,255,135,0.3)" : "#2a2a2a"}`,
-              color: copied ? "#00ff87" : "#555",
+              background: copied ? "var(--lb-me-bg)" : "var(--color-element)",
+              border: `1px solid ${copied ? "var(--lb-me-border)" : "var(--color-line-strong)"}`,
+              color: copied ? "var(--color-brand)" : "var(--color-ink-faint)",
             }}
           >
             {copied ? (
@@ -211,12 +215,12 @@ export default function LeaguePage() {
         {/* Standings */}
         <div className="overflow-hidden rounded-[12px] border border-line bg-card">
           <div className="flex items-center justify-between border-b border-line-subtle px-5 py-3.5">
-            <span className="text-[12px] font-semibold text-[#bbb]">League Standings</span>
+            <span className="text-[12px] font-semibold text-ink-muted">League Standings</span>
             <span className="font-mono text-[10.5px] text-ink-ghost">WC 2026</span>
           </div>
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-[#181818]">
+              <tr className="border-b border-line">
                 {["Rank", "Player", "Coins", "Correct", "Rate"].map((h, i) => (
                   <th
                     key={h}
@@ -235,19 +239,19 @@ export default function LeaguePage() {
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-[#161616]"
-                    style={{ background: row.isMe ? "rgba(0,255,135,0.04)" : "transparent" }}
+                    className="border-b border-line-subtle"
+                    style={{ background: row.isMe ? "var(--lb-me-bg)" : "transparent" }}
                   >
                     <td
                       className="px-4 py-[10px] text-center"
                       style={{
-                        borderLeft: `2px solid ${rank <= 3 ? rc : row.isMe ? "rgba(0,255,135,0.4)" : "transparent"}`,
+                        borderLeft: `2px solid ${rank <= 3 ? rc : row.isMe ? "var(--lb-me-border)" : "transparent"}`,
                       }}
                     >
                       {rank <= 3 ? (
                         <span className="text-[14px]">{"🥇🥈🥉"[rank - 1]}</span>
                       ) : (
-                        <span className="font-mono text-[11px] text-[#333]">#{rank}</span>
+                        <span className="font-mono text-[11px]" style={{ color: "var(--lb-rank-other)" }}>#{rank}</span>
                       )}
                     </td>
                     <td className="px-4 py-[10px]">
@@ -255,8 +259,8 @@ export default function LeaguePage() {
                         <div
                           className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
                           style={{
-                            background: row.isMe ? "linear-gradient(135deg,#00ff87,#4d7cff)" : "#1a1a1a",
-                            color: row.isMe ? "#0a0a0a" : "#333",
+                            background: row.isMe ? "var(--lb-me-avatar)" : "var(--lb-avatar-other-bg)",
+                            color: row.isMe ? "var(--lb-me-avatar-tx)" : "var(--lb-avatar-other-tx)",
                           }}
                         >
                           {row.username[0].toUpperCase()}
@@ -265,7 +269,7 @@ export default function LeaguePage() {
                           className="text-[12.5px]"
                           style={{
                             fontWeight: row.isMe ? 600 : 400,
-                            color: row.isMe ? "#00ff87" : rank <= 3 ? rc : "#aaa",
+                            color: row.isMe ? "var(--color-brand)" : rank <= 3 ? rc : "var(--lb-username-other)",
                           }}
                         >
                           {row.isMe ? "you" : row.username}
@@ -275,12 +279,12 @@ export default function LeaguePage() {
                     <td className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums text-ink-muted">
                       {row.coins.toLocaleString()}
                     </td>
-                    <td className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums text-[#555]">
+                    <td className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums" style={{ color: "var(--lb-correct-num)" }}>
                       {row.correct}
                     </td>
                     <td
                       className="px-4 py-[10px] text-right font-mono text-[12px] tabular-nums"
-                      style={{ color: row.rate >= 65 ? "#00ff87" : "#666" }}
+                      style={{ color: row.rate >= 65 ? "var(--color-brand)" : "var(--lb-rate-low)" }}
                     >
                       {row.rate.toFixed(1)}%
                     </td>
@@ -294,7 +298,7 @@ export default function LeaguePage() {
         {/* Members list */}
         <div className="overflow-hidden rounded-[12px] border border-line bg-card">
           <div className="flex items-center justify-between border-b border-line-subtle px-4 py-3.5">
-            <span className="text-[12px] font-semibold text-[#bbb]">Members</span>
+            <span className="text-[12px] font-semibold text-ink-muted">Members</span>
             <span className="font-mono text-[10.5px] text-ink-ghost">
               {members.length} / 50
             </span>
@@ -304,20 +308,20 @@ export default function LeaguePage() {
               <div
                 key={m.id}
                 className="flex items-center gap-[10px] px-4 py-2"
-                style={{ background: m.isMe ? "rgba(0,255,135,0.04)" : "transparent" }}
+                style={{ background: m.isMe ? "var(--lb-me-bg)" : "transparent" }}
               >
                 <div
                   className="flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
                   style={{
-                    background: m.isMe ? "linear-gradient(135deg,#00ff87,#4d7cff)" : "#1a1a1a",
-                    color: m.isMe ? "#0a0a0a" : "#333",
+                    background: m.isMe ? "var(--lb-me-avatar)" : "var(--lb-avatar-other-bg)",
+                    color: m.isMe ? "var(--lb-me-avatar-tx)" : "var(--lb-avatar-other-tx)",
                   }}
                 >
                   {m.username[0].toUpperCase()}
                 </div>
                 <span
                   className="flex-1 text-[12.5px]"
-                  style={{ color: m.isMe ? "#00ff87" : "#777" }}
+                  style={{ color: m.isMe ? "var(--color-brand)" : "var(--lb-username-other)" }}
                 >
                   {m.isMe ? "you" : m.username}
                 </span>

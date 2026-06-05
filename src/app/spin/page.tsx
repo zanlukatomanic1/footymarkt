@@ -3,7 +3,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import TopBar from "@/components/TopBar";
 import SpinWheel from "@/components/SpinWheel";
 
-export const metadata = { title: "Daily Spin" };
+export const metadata = { title: "Daily Coins" };
 
 export default async function SpinPage() {
   const supabase = createClient();
@@ -23,7 +23,7 @@ export default async function SpinPage() {
 
   return (
     <div>
-      <TopBar title="Daily Spin" subtitle="Free coins, once a day" />
+      <TopBar title="Daily Coins" subtitle="Free 100 coins, once a day" />
       <SpinWheel
         initialHasSpun={hasSpun ?? false}
         nextSpinAt={nextMidnightUTC.toISOString()}

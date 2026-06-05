@@ -29,7 +29,7 @@ function CopyButton({ getText, label }: { getText: () => string; label: string }
     <button
       onClick={copy}
       className="flex shrink-0 items-center gap-1.5 rounded-[6px] border border-line px-2.5 py-1 font-mono text-[10.5px] font-medium transition-colors hover:border-brand/40 hover:text-brand"
-      style={{ color: copied ? "#00ff87" : "#888" }}
+      style={{ color: copied ? "var(--color-brand)" : "var(--color-ink-faint)" }}
     >
       {copied ? <CheckIcon /> : <CopyIcon />}
       {copied ? "Copied" : label}
@@ -51,7 +51,7 @@ export default function CopyReferralLink({ referralCode }: { referralCode: strin
       </div>
       <div className="flex items-center gap-2 rounded-[8px] border border-line bg-element px-3 py-2.5">
         <span className="flex-1 font-mono text-[11px] text-ink-faint">
-          Code: <span className="text-[#e0e0e0]">{referralCode}</span>
+          Code: <span className="text-ink">{referralCode}</span>
         </span>
         <CopyButton getText={() => referralCode} label="Copy code" />
       </div>

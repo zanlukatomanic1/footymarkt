@@ -6,9 +6,14 @@ import { fmtKickoff } from "@/lib/dates";
 import type { Match, Outcome } from "@/lib/types";
 
 const RESULT_COLOR: Record<string, string> = {
-  home: "#00ff87",
-  draw: "#888888",
-  away: "#4d7cff",
+  home: "var(--pick-home-color)",
+  draw: "var(--pick-draw-color)",
+  away: "var(--pick-away-color)",
+};
+const RESULT_RGB: Record<string, string> = {
+  home: "var(--pick-home-rgb)",
+  draw: "var(--pick-draw-rgb)",
+  away: "var(--pick-away-rgb)",
 };
 
 const RESULT_LABEL: Record<string, string> = {
@@ -28,7 +33,8 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
 
   const isDirty = draft !== (match.result ?? "");
   const hasSaved = saved && match.result;
-  const rc = match.result ? RESULT_COLOR[match.result] : "#555";
+  const rc = match.result ? RESULT_COLOR[match.result] : "var(--color-ink-faint)";
+  const rcRgb = match.result ? RESULT_RGB[match.result] : "var(--pick-draw-rgb)";
 
   const handleSave = async () => {
     if (!draft || saving) return;
@@ -54,25 +60,25 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
     <tr
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      className="border-b border-[#181818] transition-colors"
+      className="border-b border-line transition-colors"
       style={{
         background: hasSaved
-          ? "rgba(0,255,135,0.02)"
+          ? "var(--lb-me-bg)"
           : hov
-          ? "rgba(255,255,255,0.015)"
+          ? "var(--color-element)"
           : "transparent",
       }}
     >
       {/* Match */}
       <td className="px-5 py-[13px]">
         <div className="flex items-center gap-2">
-          <span className="text-[13.5px] font-semibold text-[#ccc]">{match.home_team}</span>
+          <span className="text-[13.5px] font-semibold text-ink">{match.home_team}</span>
           <span
             className="rounded-[3px] bg-element px-[5px] py-[1px] font-mono text-[10px] tracking-[0.1em] text-ink-ghost"
           >
             vs
           </span>
-          <span className="text-[13.5px] font-semibold text-[#ccc]">{match.away_team}</span>
+          <span className="text-[13.5px] font-semibold text-ink">{match.away_team}</span>
         </div>
         {err && <div className="mt-1 text-[11px] text-red-400">{err}</div>}
       </td>
@@ -84,7 +90,7 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
 
       {/* Kickoff */}
       <td className="px-4 py-[13px]">
-        <span className="font-mono text-[11.5px] tabular-nums text-[#444]">
+        <span className="font-mono text-[11.5px] tabular-nums text-ink-dim">
           {fmtKickoff(match.kickoff_at)}
         </span>
       </td>
@@ -96,8 +102,8 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
             className="rounded-[5px] px-[9px] py-[3px] font-mono text-[11px] font-bold tracking-[0.05em]"
             style={{
               color: rc,
-              background: `${rc}12`,
-              border: `1px solid ${rc}28`,
+              background: `rgba(${rcRgb}, 0.09)`,
+              border: `1px solid rgba(${rcRgb}, 0.22)`,
             }}
           >
             {RESULT_LABEL[match.result]}
@@ -115,16 +121,16 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
             onChange={(e) => { setDraft(e.target.value); setSaved(false); setErr(null); }}
             className="min-w-[130px] rounded-[7px] px-[10px] py-[7px] font-mono text-[12px]"
             style={{
-              background: "#111",
-              border: `1px solid ${isDirty ? "#2a2a2a" : "#1a1a1a"}`,
-              color: draft ? (RESULT_COLOR[draft] ?? "#888") : "#3a3a3a",
+              background: "var(--color-card)",
+              border: `1px solid ${isDirty ? "var(--color-line-strong)" : "var(--color-line)"}`,
+              color: draft ? (RESULT_COLOR[draft] ?? "var(--color-ink-faint)") : "var(--color-ink-faint)",
               cursor: "pointer",
             }}
           >
-            <option value="" style={{ background: "#141414", color: "#555" }}>— Pending —</option>
-            <option value="home" style={{ background: "#141414", color: "#00ff87" }}>Home Win</option>
-            <option value="draw" style={{ background: "#141414", color: "#888" }}>Draw</option>
-            <option value="away" style={{ background: "#141414", color: "#4d7cff" }}>Away Win</option>
+            <option value="">— Pending —</option>
+            <option value="home">Home Win</option>
+            <option value="draw">Draw</option>
+            <option value="away">Away Win</option>
           </select>
         </div>
       </td>
@@ -135,11 +141,11 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
           <div
             className="flex items-center gap-[5px] rounded-[7px] px-3 py-[6px]"
             style={{
-              background: "rgba(0,255,135,0.08)",
-              border: "1px solid rgba(0,255,135,0.2)",
+              background: "var(--lb-me-bg)",
+              border: "1px solid var(--lb-me-border)",
             }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--color-brand)" }}><polyline points="20 6 9 17 4 12"/></svg>
             <span className="font-mono text-[11.5px] font-semibold text-brand">Saved</span>
           </div>
         ) : (
@@ -148,8 +154,8 @@ export default function AdminMatchRow({ match: initMatch }: { match: Match }) {
             disabled={!draft || saving}
             className="whitespace-nowrap rounded-[7px] border-none px-4 py-[6px] text-[12.5px] font-semibold transition-all duration-150"
             style={{
-              background: draft && !saving ? "#00ff87" : "#141414",
-              color: draft && !saving ? "#080808" : "#2a2a2a",
+              background: draft && !saving ? "var(--color-brand)" : "var(--color-element)",
+              color: draft && !saving ? "var(--chip-active-text)" : "var(--color-ink-ghost)",
               cursor: draft && !saving ? "pointer" : "default",
             }}
           >

@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 };
 
 const RANK_COLOR: Record<number, string> = {
-  1: "#FFD700",
-  2: "#a8a8a8",
-  3: "#cd8a3a",
+  1: "var(--color-gold)",
+  2: "var(--color-silver)",
+  3: "var(--color-bronze)",
 };
 
 export default async function LeaguesPage() {
@@ -83,7 +83,7 @@ export default async function LeaguesPage() {
         </div>
 
         {leagues.length === 0 && (
-          <div className="rounded-[12px] border border-dashed border-line-subtle bg-[#0d0d0d] py-12 text-center">
+          <div className="rounded-[12px] border border-dashed border-line-subtle bg-card py-12 text-center">
             <span className="font-mono text-[11px] text-ink-silent">
               You're not in any leagues yet.
             </span>
@@ -92,15 +92,15 @@ export default async function LeaguesPage() {
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {leagues.map((l) => {
-            const rankColor = RANK_COLOR[l.myRank] ?? (l.myRank === 1 ? "#00ff87" : "#555");
+            const rankColor = RANK_COLOR[l.myRank] ?? "var(--color-ink-faint)";
             return (
               <div
                 key={l.id}
-                className="flex flex-col gap-3.5 rounded-[12px] border border-line bg-card p-5 transition-all duration-150 hover:border-line-strong hover:bg-[#171717]"
+                className="flex flex-col gap-3.5 rounded-[12px] border border-line bg-card p-5 transition-all duration-150 hover:border-line-strong hover:bg-element"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="mb-1 text-[14.5px] font-bold tracking-[-0.2px] text-[#e0e0e0]">
+                    <div className="mb-1 text-[14.5px] font-bold tracking-[-0.2px] text-ink">
                       {l.name}
                     </div>
                     <div className="font-mono text-[11px] text-ink-faint">
@@ -125,12 +125,12 @@ export default async function LeaguesPage() {
                 <div className="flex items-center justify-between">
                   <div className="text-[11px] text-ink-faint">
                     Leader:{" "}
-                    <span style={{ color: l.leaderIsMe ? "#00ff87" : "#555" }}>
+                    <span style={{ color: l.leaderIsMe ? "var(--color-brand)" : "var(--color-ink-faint)" }}>
                       {l.leaderIsMe ? "you" : l.leader}
                     </span>
                   </div>
                   <div className="flex items-center gap-[5px]">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2.2" strokeLinecap="round" className="opacity-60">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" className="opacity-60" style={{ stroke: "var(--color-brand)" }}>
                       <circle cx="12" cy="12" r="9" />
                       <path d="M9.5 9.5c0-1.1 1.1-2 2.5-2s2.5.9 2.5 2-1 2-2.5 2.5-2.5 1-2.5 2.5 1.1 2 2.5 2 2.5-.9 2.5-2" />
                       <path d="M12 7v1M12 16v1" />

@@ -64,7 +64,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
       <div className="w-[400px] rounded-[16px] border border-line-strong bg-card p-7 pb-6">
         <div className="mb-[22px] flex items-center justify-between">
           <div>
-            <div className="text-[16px] font-bold text-[#e0e0e0]">Create a League</div>
+            <div className="text-[16px] font-bold text-ink">Create a League</div>
             <div className="mt-[3px] font-mono text-[11px] text-ink-faint">Invite friends with a code</div>
           </div>
           <button onClick={onClose} className="flex p-1 text-ink-faint hover:text-ink transition-colors">
@@ -83,7 +83,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               placeholder="e.g. Office WC 2026"
-              className="mb-4 w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] text-[13.5px] text-[#e0e0e0] font-sans"
+              className="mb-4 w-full rounded-[8px] border border-line-strong bg-element px-[14px] py-[10px] text-[13.5px] text-ink font-sans"
             />
             {err && <p className="mb-3 text-xs text-red-400">{err}</p>}
             <button
@@ -91,8 +91,8 @@ function CreateModal({ onClose }: { onClose: () => void }) {
               disabled={busy || !name.trim()}
               className="w-full rounded-[8px] border-none py-[11px] text-[13.5px] font-semibold transition-all duration-150"
               style={{
-                background: name.trim() && !busy ? "#00ff87" : "#1a1a1a",
-                color: name.trim() && !busy ? "#080808" : "#2a2a2a",
+                background: name.trim() && !busy ? "var(--color-brand)" : "var(--color-element)",
+                color: name.trim() && !busy ? "var(--chip-active-text)" : "var(--color-ink-ghost)",
                 cursor: name.trim() && !busy ? "pointer" : "default",
               }}
             >
@@ -104,23 +104,23 @@ function CreateModal({ onClose }: { onClose: () => void }) {
             <div
               className="mb-4 rounded-[10px] p-[18px]"
               style={{
-                background: "rgba(0,255,135,0.06)",
-                border: "1px solid rgba(0,255,135,0.2)",
+                background: "var(--nav-active-bg)",
+                border: "1px solid rgba(var(--pick-home-rgb), 0.2)",
               }}
             >
               <div className="mb-2 flex items-center gap-[6px] font-mono text-[11px] uppercase tracking-[0.09em] text-brand">
                 <CheckIcon /> League created!
               </div>
-              <div className="mb-3 text-[15px] font-semibold text-[#e0e0e0]">{name}</div>
+              <div className="mb-3 text-[15px] font-semibold text-ink">{name}</div>
               <div className="mb-2 font-mono text-[11px] text-ink-faint">Invite code</div>
-              <div className="flex items-center gap-[10px] rounded-[8px] border border-line-strong bg-[#0f0f0f] px-[14px] py-[10px]">
+              <div className="flex items-center gap-[10px] rounded-[8px] border border-line bg-element px-[14px] py-[10px]">
                 <code className="flex-1 font-mono text-[16px] tracking-[0.08em] text-brand font-medium">
                   {code}
                 </code>
                 <button
                   onClick={handleCopy}
                   className="flex items-center gap-1 font-mono text-[11px] transition-colors"
-                  style={{ color: copied ? "#00ff87" : "#555" }}
+                  style={{ color: copied ? "var(--color-brand)" : "var(--color-ink-faint)" }}
                 >
                   {copied ? <CheckIcon /> : <CopyIcon />} {copied ? "Copied!" : "Copy"}
                 </button>
@@ -128,7 +128,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
             </div>
             <button
               onClick={onClose}
-              className="w-full rounded-[8px] border border-[#222] bg-element py-[10px] text-[13px] font-medium text-ink-muted"
+              className="w-full rounded-[8px] border border-line bg-element py-[10px] text-[13px] font-medium text-ink-muted"
             >
               Done
             </button>
@@ -178,14 +178,14 @@ export default function LeagueActions() {
       <div className="mb-6 flex flex-wrap items-center gap-[10px]">
         <button
           onClick={() => { setShowCreate(true); setShowJoin(false); }}
-          className="flex items-center gap-[7px] rounded-[8px] bg-brand px-4 py-[9px] text-[13px] font-semibold text-[#080808]"
+          className="flex items-center gap-[7px] rounded-[8px] bg-brand px-4 py-[9px] text-[13px] font-semibold" style={{ color: "var(--chip-active-text)" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Create League
         </button>
         <button
           onClick={() => setShowJoin((v) => !v)}
-          className="flex items-center gap-[7px] rounded-[8px] border border-[#222] bg-transparent px-4 py-[9px] text-[13px] font-medium text-ink-muted hover:text-ink transition-colors"
+          className="flex items-center gap-[7px] rounded-[8px] border border-line bg-transparent px-4 py-[9px] text-[13px] font-medium text-ink-muted hover:text-ink transition-colors"
         >
           Join League
         </button>
@@ -198,15 +198,15 @@ export default function LeagueActions() {
               onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleJoin()}
               placeholder="Enter invite code…"
-              className="w-[200px] rounded-[8px] border border-line-strong bg-card px-[14px] py-[9px] font-mono text-[13px] text-[#e0e0e0]"
+              className="w-[200px] rounded-[8px] border border-line-strong bg-card px-[14px] py-[9px] font-mono text-[13px] text-ink"
             />
             <button
               onClick={handleJoin}
               disabled={busy || !joinCode.trim()}
               className="rounded-[8px] border-none px-4 py-[9px] text-[13px] font-semibold transition-all"
               style={{
-                background: joinCode.trim() && !busy ? "#00ff87" : "#1a1a1a",
-                color: joinCode.trim() && !busy ? "#080808" : "#2a2a2a",
+                background: joinCode.trim() && !busy ? "var(--color-brand)" : "var(--color-element)",
+                color: joinCode.trim() && !busy ? "var(--chip-active-text)" : "var(--color-ink-ghost)",
               }}
             >
               {busy ? "Joining…" : "Join →"}
