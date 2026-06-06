@@ -4,6 +4,10 @@ import TopBar from "@/components/TopBar";
 import SignOutButton from "./SignOutButton";
 import CopyEmail from "@/components/CopyEmail";
 import CopyReferralLink from "@/components/CopyReferralLink";
+import Link from "next/link";
+import { TEAM } from "@/lib/teamData";
+import { fmtKickoff } from "@/lib/dates";
+import type { Outcome } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +35,51 @@ export default async function AccountPage() {
     supabase.from("users").select("*", { count: "exact", head: true }).eq("referred_by", user.id),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("referred_by", user.id).eq("referral_bonus_paid", true),
   ]);
+
+  const { data: betsRaw } = await supabase
+    .from("predictions")
+    .select("id, match_id, prediction, bet_amount, coins_earned, was_correct, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const matchIds = (betsRaw ?? []).map((b) => b.match_id);
+  const { data: matchRows } = matchIds.length
+    ? await supabase
+        .from("matches")
+        .select("id, home_team, away_team, kickoff_at, result")
+        .in("id", matchIds)
+    : { data: [] as Array<{ id: string; home_team: string; away_team: string; kickoff_at: string; result: Outcome | null }> };
+
+  const matchMap = new Map((matchRows ?? []).map((m) => [m.id, m]));
+
+  type Row = {
+    id: string;
+    match_id: string;
+    prediction: Outcome;
+    bet_amount: number;
+    coins_earned: number;
+    was_correct: boolean | null;
+    created_at: string;
+    match: NonNullable<ReturnType<typeof matchMap.get>>;
+  };
+  const rows: Row[] = ((betsRaw ?? [])
+    .map((b) => {
+      const m = matchMap.get(b.match_id);
+      return m ? { ...b, match: m } as Row : null;
+    })
+    .filter(Boolean)) as Row[];
+  const openBets = rows.filter((r) => r.match.result === null);
+  const settledBets = rows.filter((r) => r.match.result !== null);
+
+  const pickLabel = (r: Row): string => {
+    const m = r.match;
+    if (r.prediction === "home") return m.home_team;
+    if (r.prediction === "away") return m.away_team;
+    return "Draw";
+  };
+
+  const pickColor = (p: Outcome): string =>
+    p === "home" ? "var(--pick-home-color)" : p === "away" ? "var(--pick-away-color)" : "var(--pick-draw-color)";
 
   const rate =
     predCount && predCount > 0
@@ -112,6 +161,93 @@ export default async function AccountPage() {
             </div>
           </div>
         )}
+
+        {/* Open bets */}
+        <div className="mb-4 rounded-[14px] border border-line bg-card p-6">
+          <div className="mb-4 flex items-baseline justify-between">
+            <div className="text-[14px] font-semibold text-ink">Open Bets</div>
+            <div className="font-mono text-[11px] text-ink-faint">{openBets.length}</div>
+          </div>
+          {openBets.length === 0 ? (
+            <div className="font-mono text-[11px] text-ink-faint">No open bets.</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {openBets.map((r) => {
+                const m = r.match;
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/match/${m.id}`}
+                    className="flex items-center justify-between rounded-[10px] border border-line bg-element px-3.5 py-3 hover:border-line-strong"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium text-ink">
+                        {TEAM[m.home_team]?.code ?? m.home_team} vs {TEAM[m.away_team]?.code ?? m.away_team}
+                      </div>
+                      <div className="mt-0.5 font-mono text-[10px] text-ink-faint">
+                        {fmtKickoff(m.kickoff_at)}
+                      </div>
+                    </div>
+                    <div className="ml-3 flex flex-col items-end">
+                      <div className="font-mono text-[11px] font-semibold uppercase" style={{ color: pickColor(r.prediction) }}>
+                        {pickLabel(r)}
+                      </div>
+                      <div className="mt-0.5 font-mono text-[10px] text-ink-faint">
+                        {r.bet_amount} coins
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bet history */}
+        <div className="mb-4 rounded-[14px] border border-line bg-card p-6">
+          <div className="mb-4 flex items-baseline justify-between">
+            <div className="text-[14px] font-semibold text-ink">Bet History</div>
+            <div className="font-mono text-[11px] text-ink-faint">{settledBets.length}</div>
+          </div>
+          {settledBets.length === 0 ? (
+            <div className="font-mono text-[11px] text-ink-faint">No settled bets yet.</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {settledBets.map((r) => {
+                const m = r.match;
+                const won = r.was_correct === true;
+                const net = won ? r.coins_earned : -r.bet_amount;
+                return (
+                  <Link
+                    key={r.id}
+                    href={`/match/${m.id}`}
+                    className="flex items-center justify-between rounded-[10px] border border-line bg-element px-3.5 py-3 hover:border-line-strong"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium text-ink">
+                        {TEAM[m.home_team]?.code ?? m.home_team} vs {TEAM[m.away_team]?.code ?? m.away_team}
+                      </div>
+                      <div className="mt-0.5 font-mono text-[10px] text-ink-faint">
+                        Pick: <span style={{ color: pickColor(r.prediction) }}>{pickLabel(r)}</span>
+                      </div>
+                    </div>
+                    <div className="ml-3 flex flex-col items-end">
+                      <div
+                        className="font-mono text-[12px] font-bold tabular-nums"
+                        style={{ color: won ? "var(--color-brand)" : "var(--lb-rate-low)" }}
+                      >
+                        {won ? "+" : ""}{net}
+                      </div>
+                      <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                        {won ? "Won" : "Lost"}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <SignOutButton />
 
