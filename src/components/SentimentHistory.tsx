@@ -101,7 +101,7 @@ export default function SentimentHistory({ points, homeTeam, awayTeam }: Props) 
                 fontSize: 12,
               }}
               labelFormatter={(v) => fmtTime(v as number, span)}
-              formatter={(v: number, name: string) => [`${v.toFixed(1)}%`, name]}
+              formatter={(v, name) => [`${Number(v).toFixed(1)}%`, String(name)]}
               labelStyle={{ color: "var(--color-ink-muted)", fontFamily: "var(--font-dm-mono)" }}
               itemStyle={{ color: "var(--color-ink)" }}
             />
