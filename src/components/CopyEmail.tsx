@@ -18,14 +18,16 @@ export default function CopyEmail({ className }: { className?: string }) {
     <div className={`flex items-center gap-[6px] ${className ?? ""}`}>
       <a
         href={`mailto:${EMAIL}`}
-        className="font-mono text-[11px] text-[#2a2a2a] hover:text-[#444] transition-colors"
+        className="font-mono text-[11px] hover:text-[#aaa] transition-colors"
+        style={{ color: "var(--sidebar-low-text)" }}
       >
         {EMAIL}
       </a>
       <button
         onClick={copy}
         title="Copy email"
-        className="flex items-center justify-center rounded text-[#2a2a2a] hover:text-[#555] transition-colors"
+        className="flex items-center justify-center rounded hover:text-[#aaa] transition-colors"
+        style={{ color: "var(--sidebar-low-text)" }}
       >
         {copied ? (
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#00ff87" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -67,7 +67,7 @@ function UsernameForm() {
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <div className="font-display text-[20px] font-bold text-white">Pick a username</div>
-          <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
+          <p className="mt-1.5 font-mono text-[11px] text-[#888888]">
             Shown on leaderboards. Can&apos;t be changed later.
           </p>
         </div>
@@ -79,19 +79,19 @@ function UsernameForm() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g. midfield_maestro"
-              className="w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] font-sans text-[13.5px] text-[#e0e0e0]"
+              className="w-full rounded-[8px] border border-[#3a3a3a] bg-topbar px-[14px] py-[10px] font-sans text-[13.5px] text-[#e0e0e0] placeholder:text-[#555555]"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.09em] text-ink-faint">
+            <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.09em] text-[#888888]">
               Referral code <span className="normal-case tracking-normal">(optional)</span>
             </label>
             <input
               value={refCode}
               onChange={(e) => setRefCode(e.target.value)}
               placeholder="e.g. a1b2c3d4"
-              className="w-full rounded-[8px] border border-line-strong bg-topbar px-[14px] py-[10px] font-mono text-[13px] text-[#e0e0e0] placeholder:text-ink-silent"
+              className="w-full rounded-[8px] border border-[#3a3a3a] bg-topbar px-[14px] py-[10px] font-mono text-[13px] text-[#e0e0e0] placeholder:text-[#555555]"
             />
           </div>
 
@@ -101,8 +101,8 @@ function UsernameForm() {
             disabled={busy}
             className="w-full rounded-[8px] py-[11px] text-[13.5px] font-semibold transition-all disabled:opacity-50"
             style={{
-              background: username.trim() && !busy ? "#00ff87" : "#1a1a1a",
-              color: username.trim() && !busy ? "#080808" : "#2a2a2a",
+              background: username.trim() && !busy ? "#00ff87" : "#222222",
+              color: username.trim() && !busy ? "#080808" : "#888888",
             }}
           >
             {busy ? "Saving…" : "Continue →"}
