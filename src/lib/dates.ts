@@ -31,6 +31,17 @@ export function fmtKickoff(iso: string): string {
   return `${MONTHS[d.getMonth()]} ${d.getDate()} · ${time}`;
 }
 
+/** "5m ago", "3h ago", "2d ago", or "Jun 11" */
+export function formatRelative(iso: string): string {
+  const d = new Date(iso);
+  const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diffSec < 60) return "just now";
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
+  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
 /** "Jun 11, 2026 · 19:00" for match detail page */
 export function fmtKickoffLong(iso: string): string {
   const d = new Date(iso);

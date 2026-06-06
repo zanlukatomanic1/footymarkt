@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Mono, Syne, Oswald } from "next/font/google";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser, getCurrentProfile } from "@/lib/cache";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 import ThemeProvider from "@/components/ThemeProvider";
@@ -46,17 +47,15 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   let profile: { username: string | null; coins: number; is_admin: boolean } | null = null;
   let spinAvailable = false;
   if (user) {
+    const supabase = createClient();
     const todayUTC = new Date().toISOString().slice(0, 10);
-    const [profileRes, spinRes] = await Promise.all([
-      supabase.from("users").select("username, coins, is_admin").eq("id", user.id).single(),
+    const [profileData, spinRes] = await Promise.all([
+      getCurrentProfile(),
       supabase
         .from("daily_spins")
         .select("id")
@@ -64,7 +63,7 @@ export default async function RootLayout({
         .limit(1)
         .maybeSingle(),
     ]);
-    profile = profileRes.data;
+    profile = profileData;
     spinAvailable = !spinRes.data;
   }
 

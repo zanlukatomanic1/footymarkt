@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 
 const RANK_COLOR: Record<number, string> = {
@@ -26,25 +27,19 @@ export default function LeaguePage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [league, setLeague] = useState<{ name: string; invite_code: string; created_by: string } | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [totalPreds, setTotalPreds] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [isOwner, setIsOwner] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
+  const { data, isLoading } = useSWR(
+    params.id ? ["league", params.id] : null,
+    async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
+      if (!user) { router.push("/login"); return null; }
 
       const { data: lg } = await supabase
         .from("leagues").select("name, invite_code, created_by").eq("id", params.id).single();
-      if (!lg) { router.push("/leagues"); return; }
-      setLeague(lg);
-      setIsOwner(lg.created_by === user.id);
+      if (!lg) { router.push("/leagues"); return null; }
 
       const { data: memberRows } = await supabase
         .from("league_members")
@@ -61,8 +56,6 @@ export default function LeaguePage() {
             .in("user_id", userIds)
         : { data: [] };
 
-      setTotalPreds((preds ?? []).length);
-
       const correctMap = new Map<string, number>();
       const totalMap = new Map<string, number>();
       for (const p of preds ?? []) {
@@ -70,7 +63,7 @@ export default function LeaguePage() {
         if (p.was_correct) correctMap.set(p.user_id, (correctMap.get(p.user_id) ?? 0) + 1);
       }
 
-      const rows: Member[] = ((memberRows ?? []) as any[])
+      const members: Member[] = ((memberRows ?? []) as any[])
         .map((m) => m.users).filter(Boolean)
         .map((u: any) => {
           const correct = correctMap.get(u.id) ?? 0;
@@ -87,12 +80,21 @@ export default function LeaguePage() {
         })
         .sort((a: Member, b: Member) => b.coins - a.coins);
 
-      setMembers(rows);
-      setLoading(false);
-    };
-    load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+      return {
+        league: lg,
+        isOwner: lg.created_by === user.id,
+        members,
+        totalPreds: (preds ?? []).length,
+      };
+    },
+    { revalidateOnFocus: false, dedupingInterval: 30_000 }
+  );
+
+  const league = data?.league ?? null;
+  const members = data?.members ?? [];
+  const totalPreds = data?.totalPreds ?? 0;
+  const isOwner = data?.isOwner ?? false;
+  const loading = isLoading || !data;
 
   const handleCopy = () => {
     if (!league) return;

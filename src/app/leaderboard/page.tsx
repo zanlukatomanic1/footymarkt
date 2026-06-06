@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser, getLeaderboardTopCached } from "@/lib/cache";
 import TopBar from "@/components/TopBar";
 import LeaderboardClient from "@/components/LeaderboardClient";
 
@@ -15,60 +16,43 @@ export const metadata: Metadata = {
 };
 
 export default async function Leaderboard() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [user, { rows: cachedRows, correctMap, totalMap }] = await Promise.all([
+    getCurrentUser(),
+    getLeaderboardTopCached(),
+  ]);
 
-  const { data: users } = await supabase
-    .from("users")
-    .select("id, username, coins")
-    .not("username", "is", null)
-    .order("coins", { ascending: false })
-    .limit(100);
-
-  const { data: allPreds } = await supabase
-    .from("predictions")
-    .select("user_id, was_correct");
-
-  const correctMap = new Map<string, number>();
-  const totalMap = new Map<string, number>();
-  for (const p of allPreds ?? []) {
-    totalMap.set(p.user_id, (totalMap.get(p.user_id) ?? 0) + 1);
-    if (p.was_correct) {
-      correctMap.set(p.user_id, (correctMap.get(p.user_id) ?? 0) + 1);
-    }
-  }
-
-  const rows = (users ?? []).map((u, i) => {
-    const correct = correctMap.get(u.id) ?? 0;
-    const total = totalMap.get(u.id) ?? 0;
-    return {
-      rank: i + 1,
-      username: u.username as string,
-      coins: u.coins,
-      correct,
-      total,
-      rate: total > 0 ? (correct / total) * 100 : 0,
-    };
-  });
+  const rows = cachedRows.map((r) => ({
+    rank: r.rank,
+    username: r.username,
+    coins: r.coins,
+    correct: r.correct,
+    total: r.total,
+    rate: r.rate,
+  }));
 
   let me = null;
   if (user) {
-    const myIdx = rows.findIndex((r) => {
-      const u = (users ?? []).find((u) => u.id === user.id);
-      return u && r.username === u.username;
-    });
-    if (myIdx >= 0) {
-      me = { ...rows[myIdx], isMe: true };
+    const inTop = cachedRows.find((r) => r.userId === user.id);
+    if (inTop) {
+      me = {
+        rank: inTop.rank,
+        username: inTop.username,
+        coins: inTop.coins,
+        correct: inTop.correct,
+        total: inTop.total,
+        rate: inTop.rate,
+        isMe: true,
+      };
     } else {
-      // User exists but outside top 100
+      const supabase = createClient();
       const { data: profile } = await supabase
         .from("users")
         .select("username, coins")
         .eq("id", user.id)
         .single();
       if (profile?.username) {
-        const correct = correctMap.get(user.id) ?? 0;
-        const total = totalMap.get(user.id) ?? 0;
+        const correct = correctMap[user.id] ?? 0;
+        const total = totalMap[user.id] ?? 0;
         const { count: rankCount } = await supabase
           .from("users")
           .select("*", { count: "exact", head: true })

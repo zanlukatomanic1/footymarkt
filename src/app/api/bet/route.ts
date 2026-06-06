@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { CACHE_TAGS } from "@/lib/cache";
 import type { Outcome } from "@/lib/types";
 
 export async function POST(req: Request) {
@@ -82,6 +84,9 @@ export async function POST(req: Request) {
     await admin.from("users").update({ coins: profile.coins }).eq("id", user.id);
     return NextResponse.json({ error: predErr.message }, { status: 500 });
   }
+
+  revalidateTag(CACHE_TAGS.sentiments);
+  revalidateTag(CACHE_TAGS.leaderboard);
 
   return NextResponse.json({ ok: true, newBalance: profile.coins - betAmount });
 }

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { CACHE_TAGS } from "@/lib/cache";
 
 function isAdminEmail(email: string | undefined) {
   if (!email) return false;
@@ -54,6 +56,10 @@ export async function POST(req: Request) {
   if (rpcErr) {
     return NextResponse.json({ error: rpcErr.message }, { status: 500 });
   }
+
+  revalidateTag(CACHE_TAGS.matches);
+  revalidateTag(CACHE_TAGS.sentiments);
+  revalidateTag(CACHE_TAGS.leaderboard);
 
   return NextResponse.json({ ok: true });
 }

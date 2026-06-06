@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { CACHE_TAGS } from "@/lib/cache";
 import { fetchWCMatches } from "@/lib/footballdata";
 
 function isAdminEmail(email: string | undefined) {
@@ -46,6 +48,8 @@ export async function POST() {
     .upsert(rows, { onConflict: "external_id", ignoreDuplicates: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  revalidateTag(CACHE_TAGS.matches);
 
   return NextResponse.json({ ok: true, upserted: rows.length });
 }
