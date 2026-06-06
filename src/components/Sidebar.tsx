@@ -162,22 +162,36 @@ export default function Sidebar({ username, coins, isAdmin, signedIn, spinAvaila
             >
               {initial}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div
                 className="text-[12px] font-semibold truncate"
                 style={{ color: "var(--username-color)" }}
               >
                 {username ?? "—"}
               </div>
-              <button
-                onClick={signOut}
-                className="font-mono text-[10.5px] hover:text-ink-muted transition-colors"
+              <span
+                className="font-mono text-[10.5px] block"
                 style={{ color: "var(--sidebar-low-text)" }}
               >
                 {coins.toLocaleString()} coins
-              </button>
+              </span>
             </div>
           </div>
+        ) : null}
+
+        {signedIn ? (
+          <button
+            onClick={signOut}
+            className="mt-1 flex w-full items-center justify-center gap-[7px] rounded-[8px] py-[8px] text-[12.5px] font-medium transition-colors hover:bg-white/5"
+            style={{ color: "#cc4444", border: "1px solid var(--sidebar-divider)" }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sign out
+          </button>
         ) : (
           <Link
             href="/login"

@@ -62,7 +62,7 @@ function LBRow({ row }: { row: Row }) {
       }}
     >
       {/* Rank */}
-      <td className="px-5 py-3 w-14">
+      <td className="pl-3 pr-2 py-3 w-10 sm:w-14 sm:px-5">
         {isTop3 ? (
           <span className="text-[17px]">{MEDAL[row.rank]}</span>
         ) : (
@@ -76,7 +76,7 @@ function LBRow({ row }: { row: Row }) {
       </td>
       {/* Player */}
       <td
-        className="px-4 py-3"
+        className="px-2 py-3 sm:px-4"
         style={{
           borderLeft: isTop3
             ? `2px solid ${mc}`
@@ -85,7 +85,7 @@ function LBRow({ row }: { row: Row }) {
             : "2px solid transparent",
         }}
       >
-        <div className="flex items-center gap-[10px]">
+        <div className="flex items-center gap-[8px]">
           <div
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
             style={{
@@ -99,9 +99,9 @@ function LBRow({ row }: { row: Row }) {
           >
             {row.username[0].toUpperCase()}
           </div>
-          <div>
+          <div className="min-w-0">
             <div
-              className="text-[13px]"
+              className="truncate text-[13px]"
               style={{
                 fontWeight: row.isMe ? 600 : 500,
                 color: row.isMe ? "var(--color-brand)" : isTop3 ? mc : "var(--lb-username-other)",
@@ -116,28 +116,28 @@ function LBRow({ row }: { row: Row }) {
         </div>
       </td>
       {/* Coins */}
-      <td className="px-5 py-3 text-right">
-        <div className="flex items-center justify-end gap-[5px]">
-          <span className="flex opacity-70" style={{ color: "var(--color-brand)" }}><CoinIcon /></span>
+      <td className="px-2 py-3 text-right sm:px-5">
+        <div className="flex items-center justify-end gap-[4px]">
+          <span className="hidden sm:flex opacity-70" style={{ color: "var(--color-brand)" }}><CoinIcon /></span>
           <span
-            className="font-mono text-[13px] font-semibold tabular-nums"
+            className="font-mono text-[12px] sm:text-[13px] font-semibold tabular-nums"
             style={{ color: isTop3 ? mc : row.isMe ? "var(--color-brand)" : "var(--lb-coins-other)" }}
           >
             {row.coins.toLocaleString()}
           </span>
         </div>
       </td>
-      {/* Correct */}
-      <td className="px-5 py-3 text-center">
+      {/* Correct — hidden on mobile */}
+      <td className="hidden sm:table-cell px-5 py-3 text-center">
         <span className="font-mono text-[12.5px] tabular-nums" style={{ color: "var(--lb-correct-num)" }}>
           {row.correct}<span style={{ color: "var(--lb-correct-sep)" }}>/{row.total}</span>
         </span>
       </td>
       {/* Rate */}
-      <td className="py-3 pr-5 text-right">
+      <td className="py-3 pr-3 sm:pr-5 text-right">
         <div className="inline-flex items-center justify-end gap-1">
           <span
-            className="font-mono text-[12.5px] font-semibold tabular-nums"
+            className="font-mono text-[12px] sm:text-[12.5px] font-semibold tabular-nums"
             style={{
               color: row.rate >= 70 ? "var(--color-brand)" : row.rate >= 60 ? "var(--lb-rate-mid)" : "var(--lb-rate-low)",
             }}
@@ -145,7 +145,7 @@ function LBRow({ row }: { row: Row }) {
             {row.rate.toFixed(1)}%
           </span>
           {row.rate >= 70 && (
-            <span className="flex opacity-70" style={{ color: "var(--color-brand)" }}><UpIcon /></span>
+            <span className="hidden sm:flex opacity-70" style={{ color: "var(--color-brand)" }}><UpIcon /></span>
           )}
         </div>
       </td>
@@ -172,14 +172,16 @@ export default function LeaderboardClient({ rows, me }: Props) {
     col,
     children,
     align = "right",
+    className = "",
   }: {
     col: typeof sortCol;
     children: React.ReactNode;
     align?: string;
+    className?: string;
   }) => (
     <th
       onClick={() => toggleSort(col)}
-      className="cursor-pointer select-none font-mono text-[10.5px] uppercase tracking-[0.1em] whitespace-nowrap px-5 py-3"
+      className={`cursor-pointer select-none font-mono text-[10.5px] uppercase tracking-[0.1em] whitespace-nowrap px-5 py-3 ${className}`}
       style={{
         textAlign: align as any,
         color: sortCol === col ? "var(--lb-th-sorted)" : "var(--lb-th-text)",
@@ -235,7 +237,7 @@ export default function LeaderboardClient({ rows, me }: Props) {
                 Player
               </th>
               <TH col="coins">Coins</TH>
-              <TH col="correct" align="center">Correct</TH>
+              <TH col="correct" align="center" className="hidden sm:table-cell">Correct</TH>
               <TH col="rate">Win Rate</TH>
             </tr>
           </thead>

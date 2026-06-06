@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import SentimentBar from "@/components/SentimentBar";
 import BetModal from "@/components/BetModal";
+import RecentPredictions, { type RecentPick } from "@/components/RecentPredictions";
 import { teamData } from "@/lib/teamData";
 import { fmtKickoffLong } from "@/lib/dates";
 import { estimateCashout, estimateReward, sentimentPct } from "@/lib/coins";
@@ -16,6 +17,7 @@ type Props = {
   initialBet: number | null;
   signedIn: boolean;
   userCoins: number;
+  recentPicks?: RecentPick[];
 };
 
 const OPTS: {
@@ -39,7 +41,7 @@ function CoinIcon({ color }: { color: string }) {
   );
 }
 
-export default function PredictForm({ match, initialSentiment, initialPick, initialBet, signedIn, userCoins }: Props) {
+export default function PredictForm({ match, initialSentiment, initialPick, initialBet, signedIn, userCoins, recentPicks = [] }: Props) {
   const router = useRouter();
   const [sentiment, setSentiment] = useState<Sentiment>(initialSentiment);
   const [pick, setPick] = useState<Outcome | null>(initialPick);
@@ -133,7 +135,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
       </a>
 
       {/* Match hero */}
-      <div className="mb-5 rounded-[14px] border border-line bg-card px-8 py-7">
+      <div className="mb-5 rounded-[14px] border border-line bg-card px-4 py-5 sm:px-8 sm:py-7">
         <div className="mb-6 flex items-start justify-between">
           <div className="flex flex-col gap-[6px]">
             <span
@@ -152,25 +154,75 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
         </div>
 
         {/* Teams row */}
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex flex-1 flex-col gap-[6px]">
-            {home.flag ? (
-              <img src={home.flag} alt={match.home_team} className="h-9 w-9 rounded object-cover" />
-            ) : (
-              <span className="text-[36px] leading-none">🏳️</span>
-            )}
-            <span className="font-display text-[24px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1]">
-              {match.home_team}
-            </span>
-            <span className="font-mono text-[12px] tracking-[0.1em] text-ink-faint">
-              {home.code}
-            </span>
+        {/* Mobile: teams side by side, VS/score + sentiment below */}
+        {/* Desktop: all in one row with center block */}
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            {/* Home team */}
+            <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
+              {home.flag ? (
+                <img src={home.flag} alt={match.home_team} className="h-8 w-8 sm:h-9 sm:w-9 rounded object-cover" />
+              ) : (
+                <span className="text-[32px] leading-none">🏳️</span>
+              )}
+              <span className="font-display text-[20px] sm:text-[24px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1] hidden sm:block">
+                {match.home_team}
+              </span>
+              <span className="font-display text-[20px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1] sm:hidden">
+                {home.code}
+              </span>
+              <span className="font-mono text-[11px] sm:text-[12px] tracking-[0.1em] text-ink-faint hidden sm:block">
+                {home.code}
+              </span>
+            </div>
+
+            {/* Center: VS / score — desktop only */}
+            <div className="hidden sm:block flex-shrink-0 w-64 lg:w-80 text-center">
+              {match.result !== null && match.home_score !== null && match.away_score !== null ? (
+                <>
+                  <div className="mb-1 font-mono text-[32px] font-bold tabular-nums text-ink-bright leading-none">
+                    {match.home_score} – {match.away_score}
+                  </div>
+                  <div className="mb-2 font-mono text-[10px] tracking-[0.12em] text-ink-ghost">FULL TIME</div>
+                </>
+              ) : locked && match.result === null ? (
+                <div className="mb-2 flex items-center justify-center gap-1.5 font-mono text-[12px] font-semibold text-[#ff6b35]">
+                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#ff6b35]" />
+                  LIVE
+                </div>
+              ) : (
+                <div className="mb-2 font-mono text-[11px] tracking-[0.18em] text-ink-silent">VS</div>
+              )}
+              <SentimentBar home={pct.home} draw={pct.draw} away={pct.away} height={10} labels={false} />
+              <div className="mt-[10px] font-mono text-[14px] text-ink-silent">
+                {pct.home.toFixed(0)}% · {pct.draw.toFixed(0)}% · {pct.away.toFixed(0)}%
+              </div>
+            </div>
+
+            {/* Away team */}
+            <div className="flex min-w-0 flex-1 flex-col items-end gap-[6px]">
+              {away.flag ? (
+                <img src={away.flag} alt={match.away_team} className="h-8 w-8 sm:h-9 sm:w-9 rounded object-cover" />
+              ) : (
+                <span className="text-[32px] leading-none">🏳️</span>
+              )}
+              <span className="font-display text-right text-[20px] sm:text-[24px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1] hidden sm:block">
+                {match.away_team}
+              </span>
+              <span className="font-display text-right text-[20px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1] sm:hidden">
+                {away.code}
+              </span>
+              <span className="font-mono text-[11px] sm:text-[12px] tracking-[0.1em] text-ink-faint hidden sm:block">
+                {away.code}
+              </span>
+            </div>
           </div>
 
-          <div className="flex-shrink-0 w-32 text-center">
+          {/* Mobile only: VS / score + sentiment below the teams */}
+          <div className="mt-4 sm:hidden text-center">
             {match.result !== null && match.home_score !== null && match.away_score !== null ? (
               <>
-                <div className="mb-1 font-mono text-[32px] font-bold tabular-nums text-ink-bright leading-none">
+                <div className="mb-1 font-mono text-[28px] font-bold tabular-nums text-ink-bright leading-none">
                   {match.home_score} – {match.away_score}
                 </div>
                 <div className="mb-2 font-mono text-[10px] tracking-[0.12em] text-ink-ghost">FULL TIME</div>
@@ -187,20 +239,6 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
             <div className="mt-[6px] font-mono text-[10px] text-ink-silent">
               {pct.home.toFixed(0)}% · {pct.draw.toFixed(0)}% · {pct.away.toFixed(0)}%
             </div>
-          </div>
-
-          <div className="flex flex-1 flex-col items-end gap-[6px]">
-            {away.flag ? (
-              <img src={away.flag} alt={match.away_team} className="h-9 w-9 rounded object-cover" />
-            ) : (
-              <span className="text-[36px] leading-none">🏳️</span>
-            )}
-            <span className="font-display text-right text-[24px] font-extrabold text-ink-bright tracking-[-0.5px] leading-[1.1]">
-              {match.away_team}
-            </span>
-            <span className="font-mono text-[12px] tracking-[0.1em] text-ink-faint">
-              {away.code}
-            </span>
           </div>
         </div>
       </div>
@@ -386,6 +424,8 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
           );
         })}
       </div>
+
+      <RecentPredictions match={match} picks={recentPicks} />
 
       {locked && (
         <p className="mt-4 text-center font-mono text-[11px] text-ink-faint">

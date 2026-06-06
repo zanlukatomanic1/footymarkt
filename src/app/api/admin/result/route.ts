@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { CACHE_TAGS } from "@/lib/cache";
+import { sendPushToUsers } from "@/lib/push";
 
 function isAdminEmail(email: string | undefined) {
   if (!email) return false;
@@ -60,6 +61,46 @@ export async function POST(req: Request) {
   revalidateTag(CACHE_TAGS.matches);
   revalidateTag(CACHE_TAGS.sentiments);
   revalidateTag(CACHE_TAGS.leaderboard);
+
+  // Fire-and-forget push fan-out. Don't fail the request if pushes break.
+  try {
+    const [{ data: match }, { data: bettors }] = await Promise.all([
+      admin.from("matches").select("home_team, away_team").eq("id", matchId).single(),
+      admin
+        .from("predictions")
+        .select("user_id, was_correct, coins_earned")
+        .eq("match_id", matchId),
+    ]);
+
+    if (match && bettors?.length) {
+      const winners = bettors.filter((b) => b.was_correct).map((b) => b.user_id);
+      const losers = bettors.filter((b) => b.was_correct === false).map((b) => b.user_id);
+      const matchLabel = `${match.home_team} vs ${match.away_team}`;
+      const url = `/match/${matchId}`;
+
+      if (winners.length) {
+        const sample = bettors.find((b) => b.was_correct && b.coins_earned > 0);
+        await sendPushToUsers(winners, {
+          title: "You called it",
+          body: sample
+            ? `${matchLabel} settled — +${sample.coins_earned} coins for the right side.`
+            : `${matchLabel} settled — you picked the right side.`,
+          url,
+          tag: `match-${matchId}`,
+        });
+      }
+      if (losers.length) {
+        await sendPushToUsers(losers, {
+          title: "Match settled",
+          body: `${matchLabel} is done. Next one's on you.`,
+          url,
+          tag: `match-${matchId}`,
+        });
+      }
+    }
+  } catch {
+    // swallow — push isn't critical
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -6,6 +6,8 @@ import { getCurrentUser, getCurrentProfile } from "@/lib/cache";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 import ThemeProvider from "@/components/ThemeProvider";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import PushPrompt from "@/components/PushPrompt";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -39,7 +41,20 @@ export const metadata: Metadata = {
     description: "Social prediction market for WC 2026. The crowd sets the odds.",
   },
   twitter: { card: "summary" },
-  icons: { icon: "/logo.ico" },
+  icons: {
+    icon: "/logo.ico",
+    apple: "/icons/icon-192.png",
+  },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "FootyMarkt",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport = {
+  themeColor: "#070707",
 };
 
 export default async function RootLayout({
@@ -80,6 +95,7 @@ export default async function RootLayout({
           __html: `(function(){var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);})()`,
         }}
       />
+      <ServiceWorkerRegister />
       <ThemeProvider>
         <div className="flex md:h-screen">
           {/* Desktop sidebar */}
@@ -98,6 +114,8 @@ export default async function RootLayout({
             </main>
           </div>
         </div>
+
+        <PushPrompt signedIn={!!user} />
 
         {/* Mobile bottom nav */}
         <MobileNav

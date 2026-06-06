@@ -3,7 +3,38 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/TopBar";
 import PredictForm from "@/components/PredictForm";
+import SentimentHistory, { type HistoryPoint } from "@/components/SentimentHistory";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
+
+const MIN_TOTAL_FOR_HISTORY = 5;
+const MAX_HISTORY_POINTS = 200;
+
+function buildHistory(rows: { prediction: Outcome; created_at: string }[]): HistoryPoint[] {
+  let h = 0, d = 0, a = 0;
+  const raw: HistoryPoint[] = [];
+  for (const r of rows) {
+    if (r.prediction === "home") h++;
+    else if (r.prediction === "draw") d++;
+    else a++;
+    const total = h + d + a;
+    if (total < MIN_TOTAL_FOR_HISTORY) continue;
+    raw.push({
+      t: new Date(r.created_at).getTime(),
+      home: (h / total) * 100,
+      draw: (d / total) * 100,
+      away: (a / total) * 100,
+    });
+  }
+  if (raw.length <= MAX_HISTORY_POINTS) return raw;
+  // Downsample: bucket by index, keep last value per bucket.
+  const step = raw.length / MAX_HISTORY_POINTS;
+  const out: HistoryPoint[] = [];
+  for (let i = 0; i < MAX_HISTORY_POINTS; i++) {
+    const idx = Math.min(raw.length - 1, Math.floor((i + 1) * step) - 1);
+    out.push(raw[idx]);
+  }
+  return out;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +77,29 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
   const { data: sentiment } = await supabase
     .from("match_sentiment").select("*").eq("match_id", params.id).single();
 
+  const { data: historyRows } = await supabase
+    .from("predictions")
+    .select("prediction, created_at")
+    .eq("match_id", params.id)
+    .order("created_at", { ascending: true });
+
+  const history = buildHistory((historyRows ?? []) as { prediction: Outcome; created_at: string }[]);
+
+  const { data: recentData } = await supabase
+    .from("predictions")
+    .select("prediction, created_at, users:user_id(username)")
+    .eq("match_id", params.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const recentPicks = (recentData ?? [])
+    .map((r: any) => ({
+      username: r.users?.username as string | null,
+      prediction: r.prediction as Outcome,
+      created_at: r.created_at as string,
+    }))
+    .filter((r) => !!r.username) as { username: string; prediction: Outcome; created_at: string }[];
+
   let pick: Outcome | null = null;
   let betAmount: number | null = null;
   let userCoins = 0;
@@ -87,6 +141,9 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
         title="Match Prediction"
         subtitle={`${m.competition} · ${m.home_team} vs ${m.away_team}`}
       />
+      <div className="px-[22px] md:px-6">
+        <SentimentHistory points={history} homeTeam={m.home_team} awayTeam={m.away_team} />
+      </div>
       <PredictForm
         match={m}
         initialSentiment={(sentiment as Sentiment) ?? {
@@ -100,6 +157,7 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
         initialBet={betAmount}
         signedIn={!!user}
         userCoins={userCoins}
+        recentPicks={recentPicks}
       />
     </>
   );
