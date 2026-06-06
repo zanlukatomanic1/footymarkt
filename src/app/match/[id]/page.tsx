@@ -141,9 +141,6 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
         title="Match Prediction"
         subtitle={`${m.competition} · ${m.home_team} vs ${m.away_team}`}
       />
-      <div className="px-[22px] md:px-6">
-        <SentimentHistory points={history} homeTeam={m.home_team} awayTeam={m.away_team} />
-      </div>
       <PredictForm
         match={m}
         initialSentiment={(sentiment as Sentiment) ?? {
@@ -159,6 +156,9 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
         userCoins={userCoins}
         recentPicks={recentPicks}
       />
+      <div className="px-[22px] pb-6 md:px-6">
+        <SentimentHistory points={history} homeTeam={m.home_team} awayTeam={m.away_team} />
+      </div>
     </>
   );
 }
