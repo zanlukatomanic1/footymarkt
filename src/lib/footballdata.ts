@@ -34,6 +34,7 @@ export type FDMatch = {
     | "CANCELLED";
   stage: string;
   group: string | null;
+  venue: string | null;
   homeTeam: FDTeam;
   awayTeam: FDTeam;
   score: FDScore;

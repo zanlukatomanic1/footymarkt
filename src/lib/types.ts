@@ -9,6 +9,7 @@ export type Match = {
   competition: string;
   home_score: number | null;
   away_score: number | null;
+  venue: string | null;
 };
 
 export type Sentiment = {

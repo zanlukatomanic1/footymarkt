@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { estimateCashout } from "@/lib/coins";
+import { checkRateLimit } from "@/lib/rateLimit";
 import type { Outcome, Sentiment } from "@/lib/types";
 
 export async function POST(req: Request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: 10 cashouts / 60s per user.
+  const allowed = await checkRateLimit(user.id, "cashout", 60, 10);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many cashout attempts — try again in a moment." },
+      { status: 429 },
+    );
+  }
 
   const body = await req.json().catch(() => ({}));
   const { matchId } = body as { matchId?: string };

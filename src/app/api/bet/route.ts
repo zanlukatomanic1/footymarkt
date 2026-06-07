@@ -2,12 +2,22 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { CACHE_TAGS } from "@/lib/cache";
+import { checkRateLimit } from "@/lib/rateLimit";
 import type { Outcome } from "@/lib/types";
 
 export async function POST(req: Request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: 10 bets / 60s per user.
+  const allowed = await checkRateLimit(user.id, "bet", 60, 10);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many bets — slow down and try again in a moment." },
+      { status: 429 },
+    );
+  }
 
   const body = await req.json().catch(() => ({}));
   const { matchId, prediction, betAmount } = body as {

@@ -147,6 +147,15 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
             <div className="font-mono text-[11px] text-ink-faint mt-[2px]">
               {fmtKickoffLong(match.kickoff_at)}
             </div>
+            {match.venue && (
+              <div className="mt-[2px] flex items-center gap-[5px] font-mono text-[11px] text-ink-faint">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>{match.venue}</span>
+              </div>
+            )}
           </div>
           <div className="font-mono text-[11px] text-ink-faint">
             {sentiment.total_count.toLocaleString()} predictions

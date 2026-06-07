@@ -1,28 +1,13 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { CACHE_TAGS } from "@/lib/cache";
 import { fetchWCMatches } from "@/lib/footballdata";
+import { requireAdminOrCron } from "@/lib/authz";
 
-function isAdminEmail(email: string | undefined) {
-  if (!email) return false;
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(email.toLowerCase());
-}
-
-export async function POST() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("users").select("is_admin").eq("id", user.id).single();
-  if (!profile?.is_admin && !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+async function handler(req: Request) {
+  const authz = await requireAdminOrCron(req);
+  if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: authz.status });
 
   let matches;
   try {
@@ -40,6 +25,7 @@ export async function POST() {
       away_team: m.awayTeam.shortName || m.awayTeam.name,
       kickoff_at: m.utcDate,
       competition: "WC2026",
+      venue: m.venue ?? null,
     }));
 
   const admin = createAdminClient();
@@ -51,5 +37,9 @@ export async function POST() {
 
   revalidateTag(CACHE_TAGS.matches);
 
-  return NextResponse.json({ ok: true, upserted: rows.length });
+  return NextResponse.json({ ok: true, upserted: rows.length, via: authz.via });
 }
+
+// Admin UI clicks + Netlify scheduled function both POST here
+// (the Netlify function in netlify/functions/sync-fixtures.mts sends a Bearer token).
+export const POST = handler;
