@@ -41,7 +41,7 @@ function SyncButton({
     idle:    { bg: "var(--color-element)", border: "var(--color-line-strong)", color: "var(--color-ink-muted)" },
     loading: { bg: "var(--color-element)", border: "var(--color-line)",        color: "var(--color-ink-faint)" },
     ok:      { bg: "var(--lb-me-bg)",      border: "var(--lb-me-border)",      color: "var(--color-brand)"    },
-    err:     { bg: "rgba(255,60,60,0.06)", border: "rgba(255,60,60,0.25)",     color: "#ff5555"               },
+    err:     { bg: "rgba(var(--color-danger-rgb), 0.06)", border: "rgba(var(--color-danger-rgb), 0.25)", color: "var(--color-danger)" },
   }[status.type];
 
   return (
@@ -62,7 +62,7 @@ function SyncButton({
       {status.msg && (
         <span
           className="font-mono text-[11px]"
-          style={{ color: status.type === "err" ? "#ff5555" : "var(--color-brand)" }}
+          style={{ color: status.type === "err" ? "var(--color-danger)" : "var(--color-brand)" }}
         >
           {status.msg}
         </span>

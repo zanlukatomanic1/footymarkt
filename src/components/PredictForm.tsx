@@ -186,8 +186,8 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                   <div className="mb-2 font-mono text-[10px] tracking-[0.12em] text-ink-ghost">FULL TIME</div>
                 </>
               ) : locked && match.result === null ? (
-                <div className="mb-2 flex items-center justify-center gap-1.5 font-mono text-[12px] font-semibold text-[#ff6b35]">
-                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#ff6b35]" />
+                <div className="mb-2 flex items-center justify-center gap-1.5 font-mono text-[12px] font-semibold text-[color:var(--color-live)]">
+                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[color:var(--color-live)]" />
                   LIVE
                 </div>
               ) : (
@@ -228,8 +228,8 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 <div className="mb-2 font-mono text-[10px] tracking-[0.12em] text-ink-ghost">FULL TIME</div>
               </>
             ) : locked && match.result === null ? (
-              <div className="mb-2 flex items-center justify-center gap-1.5 font-mono text-[12px] font-semibold text-[#ff6b35]">
-                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#ff6b35]" />
+              <div className="mb-2 flex items-center justify-center gap-1.5 font-mono text-[12px] font-semibold text-[color:var(--color-live)]">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[color:var(--color-live)]" />
                 LIVE
               </div>
             ) : (
@@ -249,9 +249,9 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
         return cashingOut ? (
           <div
             className="mb-3.5 rounded-[10px] px-[14px] py-[12px]"
-            style={{ background: "rgba(255,80,80,0.05)", border: "1px solid rgba(255,80,80,0.2)" }}
+            style={{ background: "rgba(var(--color-danger-rgb), 0.05)", border: "1px solid rgba(var(--color-danger-rgb), 0.2)" }}
           >
-            <div className="mb-[8px] text-[13px] font-semibold text-[#ff5050]">
+            <div className="mb-[8px] text-[13px] font-semibold" style={{ color: "var(--color-danger)" }}>
               Cash out your bet?
             </div>
             <div className="mb-[10px] font-mono text-[11px] text-ink-faint">
@@ -264,7 +264,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 onClick={handleCashout}
                 disabled={cashoutBusy}
                 className="flex-1 rounded-[8px] py-[8px] font-mono text-[12px] font-bold tracking-[0.04em] transition-all disabled:opacity-40"
-                style={{ background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.35)", color: "#ff5050" }}
+                style={{ background: "rgba(var(--color-danger-rgb), 0.15)", border: "1px solid rgba(var(--color-danger-rgb), 0.35)", color: "var(--color-danger)" }}
               >
                 {cashoutBusy ? "Processing…" : `Confirm — get ${cashoutValue?.toLocaleString()} coins`}
               </button>
@@ -303,12 +303,12 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
               <button
                 onClick={() => setCashingOut(true)}
                 className="flex flex-col items-end rounded-[8px] px-[10px] py-[6px] font-mono transition-all"
-                style={{ background: "rgba(255,80,80,0.06)", border: "1px solid rgba(255,80,80,0.18)" }}
+                style={{ background: "rgba(var(--color-danger-rgb), 0.06)", border: "1px solid rgba(var(--color-danger-rgb), 0.18)" }}
               >
-                <span className="text-[10px] tracking-[0.06em] text-[#ff5050aa]">CASH OUT</span>
+                <span className="text-[10px] tracking-[0.06em]" style={{ color: "rgba(var(--color-danger-rgb), 0.67)" }}>CASH OUT</span>
                 <div className="flex items-center gap-[4px]">
-                  <CoinIcon color="#ff5050" />
-                  <span className="text-[13px] font-bold text-[#ff5050] tabular-nums">
+                  <CoinIcon color="var(--color-danger)" />
+                  <span className="text-[13px] font-bold tabular-nums" style={{ color: "var(--color-danger)" }}>
                     {cashoutValue.toLocaleString()}
                   </span>
                 </div>

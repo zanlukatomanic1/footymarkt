@@ -150,12 +150,12 @@ export default function LeaguePage() {
         {isOwner && (
           confirmDelete ? (
             <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] text-[#ff5050]">Delete league?</span>
+              <span className="font-mono text-[11px]" style={{ color: "var(--color-danger)" }}>Delete league?</span>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="rounded-[7px] px-3 py-[6px] font-mono text-[11px] font-semibold transition-all"
-                style={{ background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.35)", color: "#ff5050" }}
+                style={{ background: "rgba(var(--color-danger-rgb), 0.15)", border: "1px solid rgba(var(--color-danger-rgb), 0.35)", color: "var(--color-danger)" }}
               >
                 {deleting ? "Deleting…" : "Confirm"}
               </button>
@@ -171,8 +171,8 @@ export default function LeaguePage() {
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-[5px] rounded-[7px] px-3 py-[6px] font-mono text-[11px] text-[#ff5050] transition-all hover:bg-[rgba(255,80,80,0.08)]"
-              style={{ border: "1px solid rgba(255,80,80,0.2)" }}
+              className="flex items-center gap-[5px] rounded-[7px] px-3 py-[6px] font-mono text-[11px] transition-all"
+              style={{ color: "var(--color-danger)", border: "1px solid rgba(var(--color-danger-rgb), 0.2)" }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>

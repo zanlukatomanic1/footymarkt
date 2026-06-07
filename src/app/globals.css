@@ -33,6 +33,12 @@
   --color-brand:  #00ff87;
   --color-accent: #4d7cff;
 
+  /* Semantic */
+  --color-danger:     #ff5050;
+  --color-danger-rgb: 255, 80, 80;
+  --color-live:       #ff6b35;
+  --color-live-rgb:   255, 107, 53;
+
   /* Ranks */
   --color-gold:   #FFD700;
   --color-silver: #a8a8a8;
@@ -133,6 +139,12 @@
   /* Brand / accent */
   --color-brand:  #5A9600;
   --color-accent: #3560D8;
+
+  /* Semantic */
+  --color-danger:     #D43030;
+  --color-danger-rgb: 212, 48, 48;
+  --color-live:       #D9531A;
+  --color-live-rgb:   217, 83, 26;
 
   /* Ranks */
   --color-gold:   #B8860A;
