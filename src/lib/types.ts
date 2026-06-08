@@ -46,3 +46,13 @@ export type League = {
   created_by: string;
   created_at: string;
 };
+
+export type MatchComment = {
+  id: string;
+  match_id: string;
+  user_id: string;
+  parent_id: string | null;
+  body: string;
+  created_at: string;
+  username: string | null;
+};

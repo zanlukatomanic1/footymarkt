@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { teamData } from "@/lib/teamData";
 import TopBar from "@/components/TopBar";
 import PredictForm from "@/components/PredictForm";
 import SentimentHistory, { type HistoryPoint } from "@/components/SentimentHistory";
+import MatchChat from "@/components/MatchChat";
 import type { Match, Outcome, Sentiment } from "@/lib/types";
 
 const MIN_TOTAL_FOR_HISTORY = 5;
@@ -56,12 +58,34 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       ? `${homeP}% back ${match.home_team} · ${awayP}% back ${match.away_team}. Predict the WC 2026 result.`
       : `Predict ${match.home_team} vs ${match.away_team} in WC 2026.`;
 
+  const home = teamData(match.home_team);
+  const away = teamData(match.away_team);
+  const ogParams = new URLSearchParams({
+    homeTeam: match.home_team,
+    awayTeam: match.away_team,
+    homeCode: home.code,
+    awayCode: away.code,
+    home: String(homeP ?? 33),
+    draw: String(total > 0 ? Math.round(((sentiment?.draw_count ?? 0) / total) * 100) : 34),
+    away: String(awayP ?? 33),
+    comp: match.competition,
+  });
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://footymarkt.com";
+  const ogImageUrl = `${baseUrl}/api/og/prediction?${ogParams.toString()}`;
+
   return {
     title: `${match.home_team} vs ${match.away_team}`,
     description: desc,
     openGraph: {
       title: `${match.home_team} vs ${match.away_team}`,
       description: desc,
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${match.home_team} vs ${match.away_team}`,
+      description: desc,
+      images: [ogImageUrl],
     },
   };
 }
@@ -158,6 +182,9 @@ export default async function MatchPage({ params }: { params: { id: string } }) 
       />
       <div className="px-[22px] pb-6 md:px-6">
         <SentimentHistory points={history} homeTeam={m.home_team} awayTeam={m.away_team} />
+      </div>
+      <div className="px-[22px] pb-8 md:px-6">
+        <MatchChat matchId={params.id} />
       </div>
     </>
   );

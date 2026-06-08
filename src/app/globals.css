@@ -271,3 +271,8 @@ input:focus, textarea:focus, select:focus { outline: none; }
   box-shadow: 0 2px 0 #A05000, 0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .spin-wheel-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.light-only { display: none; }
+.dark-only { display: block; }
+[data-theme="light"] .light-only { display: block; }
+[data-theme="light"] .dark-only { display: none; }

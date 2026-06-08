@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import SentimentBar from "@/components/SentimentBar";
 import BetModal from "@/components/BetModal";
+import ShareModal from "@/components/ShareModal";
 import RecentPredictions, { type RecentPick } from "@/components/RecentPredictions";
 import { teamData } from "@/lib/teamData";
 import { fmtKickoffLong } from "@/lib/dates";
@@ -53,6 +54,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
   const [modalOutcome, setModalOutcome] = useState<Outcome | null>(null);
   const [cashingOut, setCashingOut] = useState(false);
   const [cashoutBusy, setCashoutBusy] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const locked = new Date(match.kickoff_at).getTime() <= Date.now() || match.result !== null;
   const pct = useMemo(() => sentimentPct(sentiment), [sentiment]);
@@ -86,6 +88,7 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
     setBetAmount(amount);
     setCoins(json.newBalance ?? coins - amount);
     setModalOutcome(null);
+    setShowShare(true);
     router.refresh();
   };
 
@@ -308,21 +311,37 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
                 </div>
               )}
             </div>
-            {cashoutValue !== null && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setCashingOut(true)}
-                className="flex flex-col items-end rounded-[8px] px-[10px] py-[6px] font-mono transition-all"
-                style={{ background: "rgba(var(--color-danger-rgb), 0.06)", border: "1px solid rgba(var(--color-danger-rgb), 0.18)" }}
+                onClick={() => setShowShare(true)}
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-[8px] transition-all"
+                style={{ background: "var(--nav-active-bg)", border: "1px solid var(--lb-me-border)" }}
+                title="Share prediction"
               >
-                <span className="text-[10px] tracking-[0.06em]" style={{ color: "rgba(var(--color-danger-rgb), 0.67)" }}>CASH OUT</span>
-                <div className="flex items-center gap-[4px]">
-                  <CoinIcon color="var(--color-danger)" />
-                  <span className="text-[13px] font-bold tabular-nums" style={{ color: "var(--color-danger)" }}>
-                    {cashoutValue.toLocaleString()}
-                  </span>
-                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
               </button>
-            )}
+              {cashoutValue !== null && (
+                <button
+                  onClick={() => setCashingOut(true)}
+                  className="flex flex-col items-end rounded-[8px] px-[10px] py-[6px] font-mono transition-all"
+                  style={{ background: "rgba(var(--color-danger-rgb), 0.06)", border: "1px solid rgba(var(--color-danger-rgb), 0.18)" }}
+                >
+                  <span className="text-[10px] tracking-[0.06em]" style={{ color: "rgba(var(--color-danger-rgb), 0.67)" }}>CASH OUT</span>
+                  <div className="flex items-center gap-[4px]">
+                    <CoinIcon color="var(--color-danger)" />
+                    <span className="text-[13px] font-bold tabular-nums" style={{ color: "var(--color-danger)" }}>
+                      {cashoutValue.toLocaleString()}
+                    </span>
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
         );
       })()}
@@ -462,6 +481,16 @@ export default function PredictForm({ match, initialSentiment, initialPick, init
           />
         );
       })()}
+
+      {showShare && pick && betAmount !== null && (
+        <ShareModal
+          match={match}
+          pick={pick}
+          betAmount={betAmount}
+          sentiment={sentiment}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </div>
   );
 }
