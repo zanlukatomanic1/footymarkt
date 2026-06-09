@@ -13,8 +13,8 @@ export function sentimentPct(s: Sentiment) {
   };
 }
 
-// Multiplier = 1 + (1 - share). share = pickCount / total.
-// Estimate assumes the user's pick is included in counts.
+// Pari-mutuel multiplier: total_picks / picks_on_this_outcome.
+// Matches Polymarket-style odds where losers' pool funds winners.
 export function estimateReward(
   pick: Outcome,
   s: Sentiment,
@@ -31,15 +31,12 @@ export function estimateReward(
     counts[pick] += 1;
     total += 1;
   }
-  if (total === 0) return Math.round(betAmount * 2);
-  const share = counts[pick] / total;
-  const multiplier = 1 + (1 - share);
+  if (total === 0 || counts[pick] === 0) return Math.round(betAmount * 2);
+  const multiplier = total / counts[pick];
   return Math.round(betAmount * multiplier);
 }
 
-// Cashout value based on current market odds with a 25% early-exit fee.
-// If the market has moved against your pick (big underdog), you get more back.
-// If everyone is on your side, you take a bigger haircut.
+// Cashout value: current pari-mutuel odds with a 25% early-exit fee.
 export function estimateCashout(
   pick: Outcome,
   s: Sentiment,
@@ -51,8 +48,7 @@ export function estimateCashout(
     away: s.away_count,
   };
   const total = s.total_count;
-  if (total === 0) return Math.round(betAmount * CASHOUT_RATE);
-  const share = counts[pick] / total;
-  const multiplier = 1 + (1 - share);
+  if (total === 0 || counts[pick] === 0) return Math.round(betAmount * 2 * CASHOUT_RATE);
+  const multiplier = total / counts[pick];
   return Math.round(betAmount * multiplier * CASHOUT_RATE);
 }

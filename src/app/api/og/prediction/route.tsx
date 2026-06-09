@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const homeTeam = sp.get("homeTeam") ?? "Home";
@@ -251,9 +252,9 @@ export async function GET(req: NextRequest) {
               fontWeight: 600,
             }}
           >
-            <span style={{ color: HOME_COLOR }}>{home.toFixed(0)}% {homeCode}</span>
-            <span style={{ color: "#888888" }}>{draw.toFixed(0)}% Draw</span>
-            <span style={{ color: AWAY_COLOR }}>{away.toFixed(0)}% {awayCode}</span>
+            <span style={{ color: HOME_COLOR }}>{`${home.toFixed(0)}% ${homeCode}`}</span>
+            <span style={{ color: "#888888" }}>{`${draw.toFixed(0)}% Draw`}</span>
+            <span style={{ color: AWAY_COLOR }}>{`${away.toFixed(0)}% ${awayCode}`}</span>
           </div>
         </div>
 
@@ -295,7 +296,7 @@ export async function GET(req: NextRequest) {
                   fontWeight: 600,
                 }}
               >
-                {pickPct.toFixed(0)}% of market
+                {`${pickPct.toFixed(0)}% of market`}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
@@ -312,10 +313,10 @@ export async function GET(req: NextRequest) {
               />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
                 <div style={{ fontSize: 13, color: "#666666", fontWeight: 600 }}>
-                  Payout{multiplier ? ` (${multiplier}×)` : ""}
+                  {multiplier ? `Payout (${multiplier}×)` : "Payout"}
                 </div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: pickColor }}>
-                  +{payout}
+                  {`+${payout}`}
                 </div>
               </div>
             </div>

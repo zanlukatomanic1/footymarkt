@@ -38,49 +38,47 @@ describe("estimateReward", () => {
     expect(estimateReward("home", s(0, 0, 0), false)).toBe(BASE_REWARD * 2);
   });
 
-  it("scales by (1 + (1 - share)) of the chosen outcome", () => {
-    // home has 50% share → multiplier = 1.5 → 100 * 1.5 = 150
-    expect(estimateReward("home", s(5, 3, 2), false, 100)).toBe(150);
+  it("pari-mutuel: multiplier = total / pick_count", () => {
+    // home has 5/10 picks → multiplier = 10/5 = 2 → 100 * 2 = 200
+    expect(estimateReward("home", s(5, 3, 2), false, 100)).toBe(200);
   });
 
   it("rewards rare picks more than popular picks", () => {
     const sentiment = s(8, 1, 1); // 80% home, 10% draw, 10% away
-    const popular = estimateReward("home", sentiment, false, 100); // share 0.8 → 1.2× → 120
-    const rare    = estimateReward("draw", sentiment, false, 100); // share 0.1 → 1.9× → 190
-    expect(popular).toBe(120);
-    expect(rare).toBe(190);
+    const popular = estimateReward("home", sentiment, false, 100); // 10/8 = 1.25× → 125
+    const rare    = estimateReward("draw", sentiment, false, 100); // 10/1 = 10× → 1000
+    expect(popular).toBe(125);
+    expect(rare).toBe(1000);
     expect(rare).toBeGreaterThan(popular);
   });
 
-  it("includeSelf adds the user's pick to counts before computing share", () => {
-    // Before: home=1, total=1, share=1.0, multiplier=1.0 → 100
-    // includeSelf=true on a fresh draw pick: draw=0→1, total=1→2, share=0.5, multiplier=1.5 → 150
-    expect(estimateReward("draw", s(1, 0, 0), true, 100)).toBe(150);
+  it("includeSelf adds the user's pick to counts before computing multiplier", () => {
+    // Before: home=1, total=1. includeSelf=true on draw: draw=0→1, total=1→2, multiplier=2/1=2 → 200
+    expect(estimateReward("draw", s(1, 0, 0), true, 100)).toBe(200);
   });
 
   it("rounds to integer coins", () => {
-    // home=1, draw=1, away=1: share=1/3, multiplier=5/3 ≈ 1.6667 → 100 * 1.6667 = 166.67 → 167
-    expect(estimateReward("home", s(1, 1, 1), false, 100)).toBe(167);
+    // home=1, total=3: multiplier=3/1=3 → 300
+    expect(estimateReward("home", s(1, 1, 1), false, 100)).toBe(300);
   });
 
   it("scales linearly with bet amount", () => {
-    const sentiment = s(5, 3, 2);
-    expect(estimateReward("home", sentiment, false, 100)).toBe(150);
-    expect(estimateReward("home", sentiment, false, 1000)).toBe(1500);
-    expect(estimateReward("home", sentiment, false, 10)).toBe(15);
+    const sentiment = s(5, 3, 2); // home: 10/5 = 2×
+    expect(estimateReward("home", sentiment, false, 100)).toBe(200);
+    expect(estimateReward("home", sentiment, false, 1000)).toBe(2000);
+    expect(estimateReward("home", sentiment, false, 10)).toBe(20);
   });
 });
 
 describe("estimateCashout", () => {
-  it("applies a 25% fee on top of the current multiplier", () => {
-    // home 50% share → multiplier 1.5 → 100 * 1.5 * 0.75 = 112.5 → 113
-    expect(estimateCashout("home", s(5, 3, 2), 100)).toBe(113);
+  it("applies a 25% fee on top of the pari-mutuel multiplier", () => {
+    // home 5/10 → multiplier 2 → 100 * 2 * 0.75 = 150
+    expect(estimateCashout("home", s(5, 3, 2), 100)).toBe(150);
   });
 
-  it("returns bet * CASHOUT_RATE when there are no predictions yet", () => {
-    // No data → fallback: bet * 0.75 (multiplier of 1)
-    expect(estimateCashout("home", s(0, 0, 0), 100)).toBe(Math.round(100 * CASHOUT_RATE));
-    expect(estimateCashout("home", s(0, 0, 0), 100)).toBe(75);
+  it("returns 2× bet * CASHOUT_RATE when there are no predictions yet", () => {
+    expect(estimateCashout("home", s(0, 0, 0), 100)).toBe(Math.round(100 * 2 * CASHOUT_RATE));
+    expect(estimateCashout("home", s(0, 0, 0), 100)).toBe(150);
   });
 
   it("is always less than the corresponding reward (fee bites)", () => {
@@ -92,10 +90,10 @@ describe("estimateCashout", () => {
 
   it("pays more when the market has moved against the pick", () => {
     // User backed draw; if everyone else is on home, draw share is small → bigger payout
-    const lonely  = estimateCashout("draw", s(8, 1, 1), 100); // share 0.1 → 1.9× × 0.75 = 142.5 → 143
-    const crowded = estimateCashout("draw", s(1, 8, 1), 100); // share 0.8 → 1.2× × 0.75 = 90
-    expect(lonely).toBe(143);
-    expect(crowded).toBe(90);
+    const lonely  = estimateCashout("draw", s(8, 1, 1), 100); // 10/1=10× * 0.75 = 750
+    const crowded = estimateCashout("draw", s(1, 8, 1), 100); // 10/8=1.25× * 0.75 = 94
+    expect(lonely).toBe(750);
+    expect(crowded).toBe(94);
     expect(lonely).toBeGreaterThan(crowded);
   });
 });
