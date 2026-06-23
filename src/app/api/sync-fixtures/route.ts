@@ -19,6 +19,7 @@ async function handler(req: Request) {
 
   const rows = matches
     .filter((m) => m.status !== "CANCELLED" && m.status !== "POSTPONED")
+    .filter((m) => m.homeTeam?.name && m.awayTeam?.name)
     .map((m) => ({
       external_id: m.id,
       home_team: m.homeTeam.shortName || m.homeTeam.name,
