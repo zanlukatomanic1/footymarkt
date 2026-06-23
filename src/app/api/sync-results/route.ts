@@ -16,7 +16,7 @@ async function handler(req: Request) {
     .not("external_id", "is", null);
 
   if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
-  if (!unsettled?.length) return NextResponse.json({ ok: true, settled: 0, via: authz.via });
+  if (!unsettled?.length) return NextResponse.json({ ok: true, settled: 0, found: 0, via: authz.via });
 
   let apiMatches;
   try {
@@ -29,14 +29,18 @@ async function handler(req: Request) {
   const byId = new Map(apiMatches.map((m) => [m.id, m]));
 
   let settled = 0;
+  let skippedNotFound = 0;
+  let skippedNotFinished = 0;
+  let skippedNoOutcome = 0;
   const errors: string[] = [];
 
   for (const row of unsettled) {
-    const fixture = byId.get(row.external_id as number);
-    if (!fixture || fixture.status !== "FINISHED") continue;
+    const fixture = byId.get(Number(row.external_id));
+    if (!fixture) { skippedNotFound++; continue; }
+    if (fixture.status !== "FINISHED") { skippedNotFinished++; continue; }
 
     const outcome = toOutcome(fixture.score.winner);
-    if (!outcome) continue;
+    if (!outcome) { skippedNoOutcome++; continue; }
 
     const { error: updErr } = await admin
       .from("matches")
@@ -54,7 +58,16 @@ async function handler(req: Request) {
     settled++;
   }
 
-  return NextResponse.json({ ok: true, settled, via: authz.via, errors: errors.length ? errors : undefined });
+  return NextResponse.json({
+    ok: true,
+    settled,
+    found: unsettled.length,
+    skippedNotFound,
+    skippedNotFinished,
+    skippedNoOutcome,
+    via: authz.via,
+    errors: errors.length ? errors : undefined,
+  });
 }
 
 // Admin UI clicks + Netlify scheduled function both POST here

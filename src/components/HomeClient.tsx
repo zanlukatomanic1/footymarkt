@@ -55,6 +55,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [sentiments, setSentiments] = useState<Record<string, Sentiment>>(sentMap);
   const [live, setLive] = useState(false);
+  const [showFinished, setShowFinished] = useState(false);
   const stripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,30 +82,36 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // Visible matches based on finished toggle
+  const visibleMatches = useMemo(
+    () => showFinished ? matches : matches.filter(m => !m.result),
+    [matches, showFinished]
+  );
+
   // All unique match days in order
   const allDays = useMemo(() => {
     const seen = new Set<string>();
     const days: string[] = [];
-    for (const m of matches) {
+    for (const m of visibleMatches) {
       const key = localDateKey(m.kickoff_at);
       if (!seen.has(key)) { seen.add(key); days.push(key); }
     }
     return days;
-  }, [matches]);
+  }, [visibleMatches]);
 
   // Count per day
   const countByDay = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const m of matches) {
+    for (const m of visibleMatches) {
       const key = localDateKey(m.kickoff_at);
       map[key] = (map[key] ?? 0) + 1;
     }
     return map;
-  }, [matches]);
+  }, [visibleMatches]);
 
   // Filtered + grouped
   const groups = useMemo(() => {
-    const src = selectedDay === "all" ? matches : matches.filter(m => localDateKey(m.kickoff_at) === selectedDay);
+    const src = selectedDay === "all" ? visibleMatches : visibleMatches.filter(m => localDateKey(m.kickoff_at) === selectedDay);
     const map = new Map<string, Match[]>();
     for (const m of src) {
       const key = localDateKey(m.kickoff_at);
@@ -112,7 +119,7 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
       map.get(key)!.push(m);
     }
     return [...map.entries()];
-  }, [selectedDay, matches]);
+  }, [selectedDay, visibleMatches]);
 
   const defaultSent = (id: string): Sentiment => ({
     match_id: id, home_count: 0, draw_count: 0, away_count: 0, total_count: 0,
@@ -147,13 +154,35 @@ export default function HomeClient({ matches, sentMap, userPicks, signedIn, stat
         <div className="mb-2 flex items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-ghost">Match Days</span>
           <div className="h-px flex-1 bg-line-subtle" />
+          {/* Finished toggle */}
+          <button
+            onClick={() => { setShowFinished(v => !v); setSelectedDay("all"); }}
+            className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-all duration-150"
+            style={{
+              background: showFinished ? "var(--chip-active-bg)" : "var(--chip-inactive-bg)",
+              borderColor: showFinished ? "var(--chip-active-bg)" : "var(--chip-inactive-border)",
+            }}
+          >
+            <div
+              className="relative h-[10px] w-[18px] rounded-full transition-colors duration-150"
+              style={{ background: showFinished ? "var(--color-brand)" : "var(--color-line-strong)" }}
+            >
+              <div
+                className="absolute top-[1px] h-[8px] w-[8px] rounded-full bg-white transition-transform duration-150"
+                style={{ transform: showFinished ? "translateX(9px)" : "translateX(1px)" }}
+              />
+            </div>
+            <span className="font-mono text-[10px]" style={{ color: showFinished ? "var(--chip-active-text)" : "var(--chip-inactive-text)" }}>
+              Finished
+            </span>
+          </button>
           <div className="flex items-center gap-1.5">
             <span
               className="inline-block h-[6px] w-[6px] rounded-full"
               style={{ background: live ? "var(--color-brand)" : "var(--color-line-strong)", boxShadow: live ? "0 0 6px var(--color-brand)" : "none" }}
             />
             <span className="font-mono text-[10px] text-ink-silent">
-              {live ? "live" : "connecting…"} · {allDays.length} days · {matches.length} fixtures
+              {live ? "live" : "connecting…"} · {allDays.length} days · {visibleMatches.length} fixtures
             </span>
           </div>
         </div>

@@ -25,10 +25,18 @@ function SyncButton({
         setStatus({ type: "err", msg: json.error ?? `HTTP ${res.status}` });
         return;
       }
-      const detail =
-        "upserted" in json
-          ? `${json.upserted} fixtures synced`
-          : `${json.settled} result${json.settled !== 1 ? "s" : ""} settled`;
+      let detail: string;
+      if ("upserted" in json) {
+        detail = `${json.upserted} fixtures synced`;
+      } else {
+        detail = `${json.settled} settled`;
+        if (json.found !== undefined) detail += ` (found ${json.found}`;
+        if (json.skippedNotFound) detail += `, ${json.skippedNotFound} id missing`;
+        if (json.skippedNotFinished) detail += `, ${json.skippedNotFinished} not finished`;
+        if (json.skippedNoOutcome) detail += `, ${json.skippedNoOutcome} no outcome`;
+        if (json.errors?.length) detail += `, ${json.errors.length} errors: ${json.errors[0]}`;
+        if (json.found !== undefined) detail += ")";
+      }
       setStatus({ type: "ok", msg: detail });
       onDone();
     } catch (e: unknown) {
