@@ -31,7 +31,7 @@ async function handler(req: Request) {
   const admin = createAdminClient();
   const { error } = await admin
     .from("matches")
-    .upsert(rows, { onConflict: "external_id", ignoreDuplicates: false });
+    .upsert(rows, { onConflict: "home_team,away_team,kickoff_at", ignoreDuplicates: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
